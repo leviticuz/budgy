@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'searchBar.dart';
+import 'dummyItems.dart';
+import 'searchBarIn.dart';
+
+
 
 class AddItemScreen extends StatefulWidget {
   final Function(String, double, int) onAddItem;
+  final Item? selectedItem;
 
-  AddItemScreen({required this.onAddItem});
+  AddItemScreen({required this.onAddItem, this.selectedItem});
 
   @override
   _AddItemScreenState createState() => _AddItemScreenState();
@@ -17,23 +21,40 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _quantityController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.selectedItem != null) {
+      _productController.text = widget.selectedItem!.item_name!;
+      _priceController.text = widget.selectedItem!.item_price.toString();
+      _quantityController.text = '1';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Add New Item'),
         actions: <Widget>[
-      IconButton(
-      icon: Icon(Icons.search),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const Searchbar(), // Remove the semicolon here
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () async {
+              final selectedItem = await Navigator.push<Item>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const Searchbar(),
+                ),
+              );
+              if (selectedItem != null) {
+                setState(() {
+                  _productController.text = selectedItem.item_name!;
+                  _priceController.text = selectedItem.item_price.toString();
+                  _quantityController.text = '1';
+                });
+              }
+            },
           ),
-        );
-      },
-    ),
-    ]
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -85,7 +106,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text('Cancel', style: TextStyle(color: Colors.white),),
+                  child: Text('Cancel', style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
                 ),
                 ElevatedButton(
@@ -99,7 +120,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       Navigator.pop(context);
                     }
                   },
-                  child: Text('Add Item',style: TextStyle(color: Colors.white),),
+                  child: Text('Add Item', style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
                 ),
               ],

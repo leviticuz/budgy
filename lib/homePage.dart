@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'homeTab.dart';
 import 'createList.dart';
 import 'item_details.dart';
-import 'searchBar.dart';
+import 'seachBarOut.dart';
 import 'dashboard.dart';
 
 class HomePage extends StatefulWidget {
@@ -86,9 +86,9 @@ class _HomePageState extends State<HomePage> {
             },
           );
         case 2:
-          return Searchbar();
-        case 3: // Add this case for the PieChart
-          return Dashboard(); // Assuming Dashboard is the widget that contains the PieChart
+          return Seachbarout();
+        case 3:
+          return Dashboard();
         default:
           return HomeTab(itemList: itemList, onDelete: _deleteItem);
       }
@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
       :null,
       body: Container(
       color: Color(0xFFB1E8DE),
-      child: _currentPage(),  // Display the current page based on selected index
+      child: _currentPage(),
       ),
       //   child: _selectedIndex == 0
       //       ? HomeTab(itemList: itemList, onDelete: _deleteItem)

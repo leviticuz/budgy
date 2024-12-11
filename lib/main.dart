@@ -46,8 +46,8 @@ class GetStarted extends StatelessWidget {
         color:  Color(0xFFB1E8DE),
         child: Column(
           children: [
-            SizedBox(height: 80),
-            Row(
+            SizedBox(height: 180),//80
+            /*Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -59,18 +59,15 @@ class GetStarted extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            SizedBox(height: 230),
+            ),*/
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.shopping_cart_outlined,
-                  size: 130,
+                Image(image: AssetImage('UpdatedLogo.png')
                 ),
               ],
             ),
-            SizedBox(height: 90),
+            SizedBox(height: 160),//90
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

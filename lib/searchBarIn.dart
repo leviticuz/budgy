@@ -2,6 +2,7 @@ import 'package:capstonezz/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+
 class Searchbar extends StatefulWidget {
   const Searchbar({super.key});
 
@@ -60,9 +61,30 @@ class _SearchbarState extends State<Searchbar> {
     });
   }
 
+  String selectedItemName = '';
+  String selectedItemPrice = '';
+
+  void selectItem(Item selectedItem){
+    Navigator.pop(context, selectedItem);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xFFB1E8DE),
+        title: Text("Enter item to search", style: TextStyle(
+          color: Colors.teal.shade900,
+          fontSize: 22.0,
+          fontWeight: FontWeight.bold,
+        )),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: Container(
         color: Color(0xFFB1E8DE),
         child: Padding(
@@ -70,13 +92,7 @@ class _SearchbarState extends State<Searchbar> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Enter item to search", style: TextStyle(
-                color: Colors.teal.shade900,
-                fontSize: 22.0,
-                fontWeight: FontWeight.bold,
-              )),
-              SizedBox(height: 20),
+              children: [
               TextField(
                 onChanged: (value) => updateList(value),
                 decoration: InputDecoration(
@@ -95,15 +111,22 @@ class _SearchbarState extends State<Searchbar> {
                   ? Center(child: Text("No Result Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
                   : ListView.builder(
                 itemCount: display_list.length,
-                itemBuilder: (context, index) => ListTile(
-                  title: Text(display_list[index].item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
-                  // Removed item_unit from the subtitle
-                  trailing: Text(
+                itemBuilder: (context, index) => GestureDetector(
+                  onTap: () => selectItem(display_list[index]),
+                child: Card(
+                child: ListTile(
+                /*tileColor: hoverTap == index
+                      ? Colors.teal.shade100
+                      : Colors.transparent,*/
+                title: Text(display_list[index].item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
+                trailing: Text(
                     "₱${display_list[index].item_price}",
                     style: TextStyle(
                       color: Colors.teal.shade900,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
+                ),
+                    ),
                     ),
                   ),
                 ),

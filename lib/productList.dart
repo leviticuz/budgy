@@ -19,6 +19,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
         builder: (context) => AddItemScreen(
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
+              bool itemExists = false;
+              for(var existingItem in widget.item.items){
+                if(existingItem.name == itemName){
+                  existingItem.quantity += quantity;
+                  itemExists = true;
+                  break;
+                }
+              }
+              if(!itemExists){
               widget.item.items.add(
                 ItemDetail(
                   name: itemName,
@@ -27,6 +36,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   price: itemPrice,
                 ),
               );
+              }
             });
           },
         ),
