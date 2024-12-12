@@ -79,7 +79,9 @@ class _SearchbarState extends State<Searchbar> {
           fontWeight: FontWeight.bold,
         )),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back,
+            color: Colors.white),
+
           onPressed: () {
             Navigator.pop(context);
           },
