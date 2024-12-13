@@ -19,15 +19,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         builder: (context) => AddItemScreen(
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
-              bool itemExists = false;
-              for(var existingItem in widget.item.items){
-                if(existingItem.name == itemName){
-                  existingItem.quantity += quantity;
-                  itemExists = true;
-                  break;
-                }
-              }
-              if(!itemExists){
               widget.item.items.add(
                 ItemDetail(
                   name: itemName,
@@ -36,9 +27,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   price: itemPrice,
                 ),
               );
-              }
             });
           },
+          budget: widget.item.budget,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditItemScreen(int index, ItemDetail product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddItemScreen(
+          onAddItem: (String newName, double newPrice, int newQuantity) {
+            setState(() {
+              widget.item.items[index] = ItemDetail(
+                name: newName,
+                price: newPrice,
+                quantity: newQuantity,
+                isChecked: product.isChecked,
+              );
+            });
+          },
+          initialName: product.name,
+          initialPrice: product.price,
+          initialQuantity: product.quantity,
+          budget: widget.item.budget,
         ),
       ),
     );
@@ -76,30 +91,70 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 itemCount: widget.item.items.length,
                 itemBuilder: (context, index) {
                   final product = widget.item.items[index];
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    color: product.isChecked ? Colors.grey.shade200 : Colors.white,
-                    child: ListTile(
-                      leading: Checkbox(
-                        value: product.isChecked,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            product.isChecked = value!;
-                          });
-                        },
-                      ),
-                      title: Text(
-                        product.name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          decoration: product.isChecked
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                  return Dismissible(
+                    key: Key(product.name),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (direction) {
+                      setState(() {
+                        widget.item.items.removeAt(index);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("${product.name} deleted")),
+                      );
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: Card(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      color: product.isChecked ? Colors.grey.shade200 : Colors.white,
+                      child: ListTile(
+                        leading: Checkbox(
+                          value: product.isChecked,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              product.isChecked = value!;
+                            });
+                          },
+                        ),
+                        title: Text(
+                          product.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            decoration: product.isChecked
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}'),
+                            Text(
+                              'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Qty: ${product.quantity}',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.more_vert),
+                              onPressed: () {
+                                _navigateToEditItemScreen(index, product);
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      subtitle: Text('Price: ₱${product.price.toStringAsFixed(2)}'),
-                      trailing: Text('Qty: ${product.quantity}',
-                          style: TextStyle(fontSize: 16)),
                     ),
                   );
                 },
