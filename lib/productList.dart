@@ -11,6 +11,8 @@ class ProductListScreen extends StatefulWidget {
   _ProductListScreenState createState() => _ProductListScreenState();
 }
 
+Map<String, int> frequntlyBoughtItems ={};
+
 class _ProductListScreenState extends State<ProductListScreen> {
   void _navigateToAddItemScreen() {
     Navigator.push(
@@ -36,6 +38,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   price: itemPrice,
                 ),
               );
+              }
+              if (frequntlyBoughtItems.containsKey(itemName)) {
+                frequntlyBoughtItems[itemName] = frequntlyBoughtItems[itemName]! + quantity;
+              } else {
+                frequntlyBoughtItems[itemName] = quantity; //pang track kung ilang beses na-add yung item
               }
             });
           },

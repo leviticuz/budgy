@@ -3,8 +3,11 @@ import 'package:intl/intl.dart';
 import 'homeTab.dart';
 import 'createList.dart';
 import 'item_details.dart';
+import 'productList.dart';
 import 'seachBarOut.dart';
 import 'dashboard.dart';
+
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -88,7 +91,7 @@ class _HomePageState extends State<HomePage> {
         case 2:
           return Seachbarout();
         case 3:
-          return Dashboard();
+          return Dashboard(frequntlyBoughtItems: frequntlyBoughtItems);
         default:
           return HomeTab(itemList: itemList, onDelete: _deleteItem);
       }

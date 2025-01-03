@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'dummyItems.dart';
 import 'searchBarIn.dart';
 
-
-
 class AddItemScreen extends StatefulWidget {
   final Function(String, double, int) onAddItem;
   final Item? selectedItem;
