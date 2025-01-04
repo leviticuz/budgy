@@ -11,9 +11,20 @@ class ProductListScreen extends StatefulWidget {
   _ProductListScreenState createState() => _ProductListScreenState();
 }
 
-Map<String, int> frequntlyBoughtItems ={};
+Map<String, int> frequentlyBoughtItems = {};
 
 class _ProductListScreenState extends State<ProductListScreen> {
+  late List<Map<String, double>> monthlyData;
+
+  @override
+  void initState() {
+    super.initState();
+    monthlyData = List.generate(
+      12,
+          (index) => {'spending': 0.0, 'budget': widget.item.budget},
+    );
+  }
+
   void _navigateToAddItemScreen() {
     Navigator.push(
       context,
@@ -22,28 +33,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
               bool itemExists = false;
-              for(var existingItem in widget.item.items){
-                if(existingItem.name == itemName){
+              for (var existingItem in widget.item.items) {
+                if (existingItem.name == itemName) {
                   existingItem.quantity += quantity;
                   itemExists = true;
                   break;
                 }
               }
-              if(!itemExists){
-              widget.item.items.add(
-                ItemDetail(
-                  name: itemName,
-                  quantity: quantity,
-                  isChecked: false,
-                  price: itemPrice,
-                ),
-              );
+              if (!itemExists) {
+                widget.item.items.add(
+                  ItemDetail(
+                    name: itemName,
+                    quantity: quantity,
+                    isChecked: false,
+                    price: itemPrice,
+                  ),
+                );
               }
-              if (frequntlyBoughtItems.containsKey(itemName)) {
-                frequntlyBoughtItems[itemName] = frequntlyBoughtItems[itemName]! + quantity;
+              if (frequentlyBoughtItems.containsKey(itemName)) {
+                frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + quantity;
               } else {
-                frequntlyBoughtItems[itemName] = quantity; //pang track kung ilang beses na-add yung item
+                frequentlyBoughtItems[itemName] = quantity;
               }
+            });
+
+            final int month = DateTime.now().month - 1;
+            setState(() {
+              monthlyData[month]['spending'] =
+                  (monthlyData[month]['spending'] ?? 0.0) +
+                      (itemPrice * quantity);
             });
           },
         ),
@@ -105,8 +123,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ),
                       ),
                       subtitle: Text('Price: ₱${product.price.toStringAsFixed(2)}'),
-                      trailing: Text('Qty: ${product.quantity}',
-                          style: TextStyle(fontSize: 16)),
+                      trailing: Text('Qty: ${product.quantity}', style: TextStyle(fontSize: 16)),
                     ),
                   );
                 },
@@ -118,8 +135,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 16)),
+                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
                   Container(
                     color: isOverBudget ? Colors.red : Colors.teal.shade100,
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -3,11 +3,8 @@ import 'package:intl/intl.dart';
 import 'homeTab.dart';
 import 'createList.dart';
 import 'item_details.dart';
-import 'productList.dart';
 import 'seachBarOut.dart';
 import 'dashboard.dart';
-
-
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,6 +18,9 @@ class _HomePageState extends State<HomePage> {
   DateTime _selectedDate = DateTime.now();
   List<Item> itemList = [];
   int _selectedIndex = 0;
+
+  List<Map<String, double>> monthlyData = List.generate(12, (index) => {'spending': 0.0, 'budget': 0.0});
+  Map<String, int> frequentlyBoughtItems = {};
 
   @override
   void initState() {
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
         case 2:
           return Seachbarout();
         case 3:
-          return Dashboard(frequntlyBoughtItems: frequntlyBoughtItems);
+          return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems, monthlyData: monthlyData);
         default:
           return HomeTab(itemList: itemList, onDelete: _deleteItem);
       }
@@ -100,7 +100,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: _selectedIndex != 2 && _selectedIndex != 3
           ? AppBar(
-        backgroundColor: const Color(0xFF5BB7A6),
+        backgroundColor: Color(0xFF5BB7A6),
         title: Text(
           _selectedIndex == 1 ? 'New List' : 'Lists',
           style: const TextStyle(color: Colors.white),
