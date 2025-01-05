@@ -10,10 +10,10 @@ class ProductListScreen extends StatefulWidget {
   @override
   _ProductListScreenState createState() => _ProductListScreenState();
 }
+
 Map<String, int> frequentlyBoughtItems = {};
 
 class _ProductListScreenState extends State<ProductListScreen> {
-
   void _navigateToAddItemScreen() {
     Navigator.push(
       context,

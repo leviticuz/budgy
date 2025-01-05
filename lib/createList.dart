@@ -10,8 +10,6 @@ class CreateTab extends StatelessWidget {
   final VoidCallback onSelectDate;
   final bool isNewList;
 
-
-
   CreateTab({
     required this.titleController,
     required this.budgetController,

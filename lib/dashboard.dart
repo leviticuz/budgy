@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:pie_chart/pie_chart.dart';
+<<<<<<< HEAD
 import 'productList.dart';
 
 class Dashboard extends StatelessWidget {
   final Map<String, int>? frequentlyBoughtItems;
 
   Dashboard({required this.frequentlyBoughtItems});
+=======
+//import 'package:fl_chart/fl_chart.dart';
+import 'bar.dart';
+
+class Dashboard extends StatelessWidget {
+  final Map<String, int>? frequentlyBoughtItems;
+  final List<Map<String, double>> monthlyData;
+
+  Dashboard({required this.frequentlyBoughtItems, required this.monthlyData});
+>>>>>>> 686365082fad737953a1853378d957da303d20bf
 
   List<MapEntry<String, int>> getFreqItems(Map<String, int> data) {
     var sortedItems = data.entries.toList()
@@ -115,10 +126,18 @@ class Dashboard extends StatelessWidget {
                   showChartValuesInPercentage: true,
                 ),
               ),
+<<<<<<< HEAD
+=======
+             // barChart(monthlyData: monthlyData),
+>>>>>>> 686365082fad737953a1853378d957da303d20bf
             ],
           ),
         ),
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 686365082fad737953a1853378d957da303d20bf

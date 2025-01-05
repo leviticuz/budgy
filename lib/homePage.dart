@@ -19,6 +19,7 @@ class _HomePageState extends State<HomePage> {
   List<Item> itemList = [];
   int _selectedIndex = 0;
 
+  List<Map<String, double>> monthlyData = List.generate(12, (index) => {'spending': 0.0, 'budget': 0.0});
   Map<String, int> frequentlyBoughtItems = {};
 
   @override
@@ -85,8 +86,7 @@ class _HomePageState extends State<HomePage> {
             },
             onSelectDate: () {
               _selectDate(context);
-            },
-            isNewList: true,
+            }, isNewList: true,
           );
         case 2:
           return Seachbarout();

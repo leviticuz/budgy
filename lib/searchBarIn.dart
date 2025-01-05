@@ -91,7 +91,6 @@ class _SearchbarState extends State<Searchbar> {
           padding: EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
                 onChanged: (value) => updateList(value),
@@ -139,3 +138,4 @@ class _SearchbarState extends State<Searchbar> {
     );
   }
 }
+
