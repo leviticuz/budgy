@@ -22,6 +22,7 @@ class CreateTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     if (isNewList) {
       titleController.clear();
       budgetController.clear();
@@ -29,6 +30,8 @@ class CreateTab extends StatelessWidget {
     }
 
 
+=======
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
     return Scaffold(
       backgroundColor: Color(0xFFB1E8DE),
       body: Padding(
@@ -36,8 +39,17 @@ class CreateTab extends StatelessWidget {
         child: Column(
           children: [
             Spacer(),
+<<<<<<< HEAD
             Container(
               padding: EdgeInsets.all(19.0),
+=======
+            Container( //Note: Container for the card behind the text areasss -I<3
+              padding: EdgeInsets.all(19.0),
+              decoration: BoxDecoration(
+                color: Color(0xFF5BB7A6),
+                borderRadius: BorderRadius.circular(16),
+              ),
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
               child: Column(
                 children: [
                   Container(
@@ -62,6 +74,56 @@ class CreateTab extends StatelessWidget {
                       ),
                     ),
                   ),
+<<<<<<< HEAD
+=======
+                  SizedBox(height: 16),
+
+                  Container(
+                    margin: EdgeInsets.only(bottom: 19),
+                    padding: EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: budgetController,
+                      decoration: InputDecoration(
+                        labelText: 'Budget (₱)',
+                        border: InputBorder.none,
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(7), // Note: Here is allowing up to 7 digits in setting budget -I<3 (para madaling makita pag inedit)
+                      ],
+                      onChanged: (value) {
+                        String newValue = value.replaceAll(',', '');
+
+                        if (newValue.isNotEmpty && int.tryParse(newValue) != null) { // Condition that it budget should at least 100 pesos -I<3
+                          int parsedValue = int.parse(newValue);
+                          if (parsedValue > 100 && parsedValue <= 9999999) {
+                            budgetController.value = TextEditingValue(
+                              text: newValue,
+                              selection: TextSelection.collapsed(
+                                offset: newValue.length,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+
+                  SizedBox(height: 16),
+
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
                   Container(
                     margin: EdgeInsets.only(bottom: 19),
                     padding: EdgeInsets.all(12.0),
@@ -95,6 +157,7 @@ class CreateTab extends StatelessWidget {
                       ],
                     ),
                   ),
+<<<<<<< HEAD
 
                   Container(
                     margin: EdgeInsets.only(bottom: 19),
@@ -186,6 +249,8 @@ class CreateTab extends StatelessWidget {
                       );
                     }).toList(),
                   ),
+=======
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
                 ],
               ),
             ),

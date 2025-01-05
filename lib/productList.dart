@@ -21,6 +21,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         builder: (context) => AddItemScreen(
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
+<<<<<<< HEAD
               bool itemExists = false;
               for(var existingItem in widget.item.items){
                 if(existingItem.name == itemName){
@@ -44,6 +45,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
               } else {
                 frequentlyBoughtItems[itemName] = quantity; //pang track kung ilang beses na-add yung item
               }
+=======
+              widget.item.items.add(
+                ItemDetail(
+                  name: itemName,
+                  quantity: quantity,
+                  isChecked: false,
+                  price: itemPrice,
+                ),
+              );
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
             });
           },
           budget: widget.item.budget,
@@ -120,6 +131,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       );
                     },
                     background: Container(
+<<<<<<< HEAD
                       margin: EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.red,
@@ -133,6 +145,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
+=======
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: Card(
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
                       margin: EdgeInsets.symmetric(vertical: 8),
                       color: product.isChecked ? Colors.grey.shade200 : Colors.white,
                       child: ListTile(
@@ -156,8 +176,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+<<<<<<< HEAD
                             Text('Price: ₱${product.price.toStringAsFixed(2)}',style: TextStyle(fontSize: 16)),
 
+=======
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}'),
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
                             Text(
                               'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
                               style: TextStyle(color: Colors.black54),

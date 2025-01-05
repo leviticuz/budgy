@@ -51,6 +51,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               onPressed: () {
                 Navigator.pop(context); // Note: Closing the message without adding the item -I<3
               },
+<<<<<<< HEAD
               child: Text("No", style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
@@ -62,6 +63,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 elevation: 6,
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
+=======
+              child: Text("No", style: TextStyle(color: Colors.teal)),
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
             ),
             TextButton(
               onPressed: () {
@@ -71,6 +75,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
+<<<<<<< HEAD
               child: Text("Yes", style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal.shade900,
@@ -82,6 +87,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 elevation: 6,
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
+=======
+              child: Text("Yes", style: TextStyle(color: Colors.teal)),
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
             ),
           ],
           shape: RoundedRectangleBorder(
@@ -125,6 +133,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
             Spacer(),
             Container(
               padding: EdgeInsets.all(19.0),
+<<<<<<< HEAD
+=======
+              decoration: BoxDecoration(
+                color: Color(0xFF5BB7A6),
+                borderRadius: BorderRadius.circular(16),
+              ),
+>>>>>>> 0930f73bf366f6ce1bbd3518f5b9601a3dac6697
               child: Column(
                 children: [
 
