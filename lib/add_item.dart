@@ -4,6 +4,7 @@ import 'dummyItems.dart';
 import 'searchBarIn.dart';
 import 'package:intl/intl.dart';
 
+
 class AddItemScreen extends StatefulWidget {
   final Function(String, double, int) onAddItem;
   final String? initialName;

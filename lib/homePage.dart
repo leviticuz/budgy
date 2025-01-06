@@ -59,7 +59,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
   void _deleteItem(Item item) {
     setState(() {
       itemList.remove(item);
