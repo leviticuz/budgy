@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:pie_chart/pie_chart.dart';
-//import 'package:fl_chart/fl_chart.dart';
-import 'bar.dart';
+import 'productList.dart';
 
 class Dashboard extends StatelessWidget {
-  final Map<String, int>? frequentlyBoughtItems;
-  final List<Map<String, double>> monthlyData;
+  final Map<String, int> frequentlyBoughtItems;
 
-  Dashboard({required this.frequentlyBoughtItems, required this.monthlyData});
-
-  List<MapEntry<String, int>> getFreqItems(Map<String, int> data) {
-    var sortedItems = data.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return sortedItems.take(5).toList();
-  }
+  Dashboard({required this.frequentlyBoughtItems});
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +57,10 @@ class Dashboard extends StatelessWidget {
         ),
       );
     }
+    List<MapEntry<String, int>> sortedItems = data.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-    var topItems = getFreqItems(data);
+    List<MapEntry<String, int>> topItems = sortedItems.take(5).toList();
 
     Map<String, double> dataMap = {};
     for (var entry in topItems) {
@@ -117,7 +111,6 @@ class Dashboard extends StatelessWidget {
                   showChartValuesInPercentage: true,
                 ),
               ),
-             // barChart(monthlyData: monthlyData),
             ],
           ),
         ),

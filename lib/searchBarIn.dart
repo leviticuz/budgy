@@ -1,7 +1,6 @@
-import 'package:capstonezz/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-
+import 'dummyItems.dart';
 
 class Searchbar extends StatefulWidget {
   const Searchbar({super.key});
@@ -29,7 +28,7 @@ class _SearchbarState extends State<Searchbar> {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         List<Item> tempList = [];
         data.forEach((key, category) {
-          final categoryName = category['name'] ?? ''; // Extract category name
+          final categoryName = category['name'] ?? '';
           final items = Map<String, dynamic>.from(category['items']);
           items.forEach((_, itemData) {
             tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
@@ -61,9 +60,6 @@ class _SearchbarState extends State<Searchbar> {
     });
   }
 
-  String selectedItemName = '';
-  String selectedItemPrice = '';
-
   void selectItem(Item selectedItem){
     Navigator.pop(context, selectedItem);
   }
@@ -90,9 +86,7 @@ class _SearchbarState extends State<Searchbar> {
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            children: [
               TextField(
                 onChanged: (value) => updateList(value),
                 decoration: InputDecoration(
@@ -107,30 +101,28 @@ class _SearchbarState extends State<Searchbar> {
                 ),
               ),
               SizedBox(height: 20),
-              Expanded(child: display_list.isEmpty
-                  ? Center(child: Text("No Result Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
-                  : ListView.builder(
-                itemCount: display_list.length,
-                itemBuilder: (context, index) => GestureDetector(
-                  onTap: () => selectItem(display_list[index]),
-                child: Card(
-                child: ListTile(
-                /*tileColor: hoverTap == index
-                      ? Colors.teal.shade100
-                      : Colors.transparent,*/
-                title: Text(display_list[index].item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
-                trailing: Text(
-                    "₱${display_list[index].item_price}",
-                    style: TextStyle(
-                      color: Colors.teal.shade900,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                ),
-                    ),
+              Expanded(
+                child: display_list.isEmpty
+                    ? Center(child: Text("No Result Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
+                    : ListView.builder(
+                  itemCount: display_list.length,
+                  itemBuilder: (context, index) => GestureDetector(
+                    onTap: () => selectItem(display_list[index]),
+                    child: Card(
+                      child: ListTile(
+                        title: Text(display_list[index].item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: Text(
+                          "₱${display_list[index].item_price}",
+                          style: TextStyle(
+                            color: Colors.teal.shade900,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
               ),
             ],
           ),

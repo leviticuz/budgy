@@ -4,6 +4,7 @@ import 'homeTab.dart';
 import 'createList.dart';
 import 'item_details.dart';
 import 'seachBarOut.dart';
+import 'productList.dart';
 import 'dashboard.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,9 +19,9 @@ class _HomePageState extends State<HomePage> {
   DateTime _selectedDate = DateTime.now();
   List<Item> itemList = [];
   int _selectedIndex = 0;
-
-  List<Map<String, double>> monthlyData = List.generate(12, (index) => {'spending': 0.0, 'budget': 0.0});
   Map<String, int> frequentlyBoughtItems = {};
+  List<Map<String, double>> monthlyData = List.generate(12, (index) => {'spending': 0.0, 'budget': 0.0});
+
 
   @override
   void initState() {
@@ -42,6 +43,11 @@ class _HomePageState extends State<HomePage> {
         date: date,
         items: [],
       ));
+      /*if (frequentlyBoughtItems.containsKey(title)) {
+        frequentlyBoughtItems[title] = frequentlyBoughtItems[title]! + 1;
+      } else {
+        frequentlyBoughtItems[title] = 1; // New item
+      }*/
       _selectedIndex = 0;
     });
   }
@@ -86,12 +92,12 @@ class _HomePageState extends State<HomePage> {
             },
             onSelectDate: () {
               _selectDate(context);
-            },
+            }, isNewList: true,
           );
         case 2:
           return Seachbarout();
         case 3:
-          return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems, monthlyData: monthlyData);
+          return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems);/* monthlyData: monthlyData);*/
         default:
           return HomeTab(itemList: itemList, onDelete: _deleteItem);
       }
