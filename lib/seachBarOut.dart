@@ -1,4 +1,4 @@
-import 'package:capstonezz/dummyItems.dart';
+import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
