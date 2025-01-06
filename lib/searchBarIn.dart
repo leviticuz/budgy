@@ -106,24 +106,68 @@ class _SearchbarState extends State<Searchbar> {
                     ? Center(child: Text("No Result Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
                     : ListView.builder(
                   itemCount: display_list.length,
-                  itemBuilder: (context, index) => GestureDetector(
-                    onTap: () => selectItem(display_list[index]),
-                    child: Card(
-                      child: ListTile(
-                        title: Text(display_list[index].item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
-                        trailing: Text(
-                          "₱${display_list[index].item_price}",
-                          style: TextStyle(
-                            color: Colors.teal.shade900,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                  itemBuilder: (context, index) {
+                    var item = display_list[index];
+                    var item_cost = item.item_cost;
+
+                    // Check if the category name should be displayed
+                    bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Display category name as a non-clickable header
+                        if (isFirstItemInCategory)
+                          Container(
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            child: Text(
+                              item.category_name!,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal.shade900,
+                              ),
+                            ),
+                          ),
+                        // Display item details
+                        GestureDetector(
+                          onTap: () => selectItem(item),
+                          child: Card(
+                            child: ListTile(
+                              title: Text(item.item_name!, style: TextStyle(fontWeight: FontWeight.bold)),
+                              trailing: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "₱${item.item_price.toString()}",
+                                    style: TextStyle(
+                                      color: Colors.teal.shade900,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    item_cost == null || item_cost == "n/a"
+                                        ? "Market Price: n/a"
+                                        : "Market Price: ₱$item_cost",
+                                    style: TextStyle(
+                                      color: Colors.teal.shade700,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
+                      ],
+                    );
+                  },
                 ),
               ),
+
             ],
           ),
         ),
