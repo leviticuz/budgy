@@ -57,6 +57,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
+                double price = double.parse(_priceController.text.replaceAll(',', ''));
+                int quantity = int.parse(_quantityController.text);
+                widget.onAddItem(_productController.text, price, quantity);
+                Navigator.pop(context);
                 Navigator.pop(context);
               },
               child: Text("Yes", style: TextStyle(color: Colors.white)),
@@ -73,10 +77,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
             ),
             TextButton(
               onPressed: () {
-                double price = double.parse(_priceController.text.replaceAll(',', ''));
-                int quantity = int.parse(_quantityController.text);
-                widget.onAddItem(_productController.text, price, quantity);
-                Navigator.pop(context);
                 Navigator.pop(context);
               },
               child: Text("No", style: TextStyle(color: Colors.white)),
@@ -172,17 +172,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       controller: _productController,
                       decoration: InputDecoration(
                         labelText: 'Item Name',
-                        hintText: 'Select an item from search',  // Placeholder for item name
                         border: InputBorder.none,
-                        floatingLabelBehavior: FloatingLabelBehavior.always,  // Keep the label on top at all times
-                        labelStyle: TextStyle(
-                          color: _productController.text.isEmpty ? Colors.grey : Colors.black,  // Gray when empty, normal when filled
-                        ),
                       ),
-                      style: TextStyle(
-                        color: _productController.text.isEmpty ? Colors.grey : Colors.black,  // Gray when empty, normal when filled
-                      ),
-                      enabled: false,  // Disable editing for the item name
+                      enabled: true,  // Disable editing for the item name
                     ),
                   ),
                   Container(
@@ -203,17 +195,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       controller: _priceController,
                       decoration: InputDecoration(
                         labelText: 'Price (₱)',
-                        hintText: 'Select an Item',  // Placeholder for price
                         border: InputBorder.none,
-                        floatingLabelBehavior: FloatingLabelBehavior.always,  // Keep the label on top at all times
-                        labelStyle: TextStyle(
-                          color: _priceController.text.isEmpty ? Colors.grey : Colors.black,  // Gray when empty, normal when filled
-                        ),
                       ),
-                      style: TextStyle(
-                        color: _priceController.text.isEmpty ? Colors.grey : Colors.black,  // Gray when empty, normal when filled
-                      ),
-                      enabled: false,  // Disable editing for the price
+                      enabled: true,  // Disable editing for the price
                     ),
                   ),
                   Container(

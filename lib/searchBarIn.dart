@@ -156,9 +156,11 @@ class _SearchbarState extends State<Searchbar> {
                                 ),
                               ),
                             ),
-                          // Display item details
+                          // Display item details and make the item clickable
                           GestureDetector(
-                            onTap: () => (display_list[index]), // Action can be added here
+                            onTap: () {
+                              Navigator.pop(context, item);  // Return the selected item
+                            },
                             child: Card(
                               child: ListTile(
                                 title: Text(
