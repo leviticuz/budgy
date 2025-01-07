@@ -136,6 +136,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
+            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),

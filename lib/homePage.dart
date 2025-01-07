@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
+
 class _HomePageState extends State<HomePage> {
   final _titleController = TextEditingController();
   final _budgetController = TextEditingController();
@@ -90,7 +91,9 @@ class _HomePageState extends State<HomePage> {
     if (budget == null) {
       // Not a valid number
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid number for the budget')),
+        SnackBar(content: Text('Please enter a valid number for the budget'),
+          duration: Duration(seconds: 1),
+        ),
       );
       return;
     }
