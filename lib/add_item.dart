@@ -29,6 +29,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
   late TextEditingController _productController;
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
+  String? _productError;
+  String? _priceError;
+  String? _quantityError;
 
   @override
   void initState() {
@@ -115,31 +118,26 @@ class _AddItemScreenState extends State<AddItemScreen> {
           IconButton(
             icon: Icon(Icons.search),
             onPressed: () async {
-              // Navigate to the search screen and wait for the selected item
               final selectedItem = await Navigator.push<Item>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const Searchbar(),  // The search screen
+                  builder: (context) => const Searchbar(),
                 ),
               );
 
-              // If an item is selected, populate the text fields
               if (selectedItem != null) {
                 setState(() {
-                  // Check if the item_cost is available (not "N/A")
                   if (selectedItem.item_cost != null && selectedItem.item_cost != 'n/a') {
-                    _priceController.text = selectedItem.item_cost.toString();  // Use item_cost
+                    _priceController.text = selectedItem.item_cost.toString();
                   } else {
-                    _priceController.text = selectedItem.item_price.toString();  // Use item_price if item_cost is unavailable
+                    _priceController.text = selectedItem.item_price.toString();
                   }
-
-                  _productController.text = selectedItem.item_name!;  // Set the item name
-                  _quantityController.text = '1';  // Default quantity to 1
+                  _productController.text = selectedItem.item_name!;
+                  _quantityController.text = '1';
                 });
               }
             },
           ),
-
         ],
       ),
       body: Padding(
@@ -173,8 +171,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       decoration: InputDecoration(
                         labelText: 'Item Name',
                         border: InputBorder.none,
+                        errorText: _productError,
                       ),
-                      enabled: true,  // Disable editing for the item name
+                      enabled: true,
                     ),
                   ),
                   Container(
@@ -196,8 +195,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       decoration: InputDecoration(
                         labelText: 'Price (₱)',
                         border: InputBorder.none,
+                        errorText: _priceError,
                       ),
-                      enabled: true,  // Disable editing for the price
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
+                      ],
+                      enabled: true,
                     ),
                   ),
                   Container(
@@ -219,6 +223,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       decoration: InputDecoration(
                         labelText: 'Quantity',
                         border: InputBorder.none,
+                        errorText: _quantityError,
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
@@ -251,6 +256,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    setState(() {
+                      _productError = null;
+                      _priceError = null;
+                      _quantityError = null;
+
+                    });
+
                     if (_productController.text.isNotEmpty &&
                         _priceController.text.isNotEmpty &&
                         _quantityController.text.isNotEmpty) {
@@ -263,6 +275,22 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       } else {
                         widget.onAddItem(_productController.text, price, quantity);
                         Navigator.pop(context);
+                      }
+                    } else {
+                      if (_productController.text.isEmpty) {
+                        setState(() {
+                          _productError = "Item name cannot be empty";
+                        });
+                      }
+                      if (_priceController.text.isEmpty) {
+                        setState(() {
+                          _priceError = "Price cannot be empty";
+                        });
+                      }
+                      if (_quantityController.text.isEmpty) {
+                        setState(() {
+                          _quantityError = "Quantity cannot be empty";
+                        });
                       }
                     }
                   },
