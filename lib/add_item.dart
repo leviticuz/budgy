@@ -264,12 +264,35 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         widget.onAddItem(_productController.text, price, quantity);
                         Navigator.pop(context);
                       }
+                    } else {
+                      if (_productController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Item Name is required'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }else if (_priceController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Item price is required'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }else if (_quantityController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Item Quantity is required'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
                     }
                   },
-                    child: Text(
-                      widget.initialName != null ? 'Save Changes' : 'Add Item',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  child: Text(
+                    widget.initialName != null ? 'Save Changes' : 'Add Item',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal.shade700,
                     foregroundColor: Colors.white,
@@ -281,6 +304,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 35, vertical: 20),
                   ),
                 ),
+
+
+
               ],
             ),
             SizedBox(height: 16),
