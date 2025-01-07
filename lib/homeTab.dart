@@ -48,7 +48,28 @@ class HomeTab extends StatelessWidget {
               subtitle: Text(
                 'Budget: ₱${item.budget.toStringAsFixed(2)}\nDate: ${DateFormat('yyyy-MM-dd').format(item.date)}',
               ),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              trailing: Stack(
+                clipBehavior: Clip.none,  // Allow the text to overflow
+                children: [
+                  // Reduced opacity text
+                  Positioned(
+                    bottom: 0,
+                    right: 30,
+                    child: Opacity(
+                      opacity: 0.5,  // Reduced opacity
+                      child: Text(
+                        "Slide to delete",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey, // You can choose any color you want
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Arrow icon
+                  Icon(Icons.arrow_forward_ios, size: 16),
+                ],
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -59,6 +80,7 @@ class HomeTab extends StatelessWidget {
               },
             ),
           ),
+
         );
       },
     );

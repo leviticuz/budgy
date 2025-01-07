@@ -63,8 +63,7 @@ class GetStarted extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image(image: AssetImage('UpdatedLogo.png')
-                ),
+                Image.asset('assets/UpdatedLogo.png')
               ],
             ),
             SizedBox(height: 160),//90

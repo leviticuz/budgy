@@ -1,7 +1,8 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'add_item.dart';
 import 'item_details.dart';
-import 'dashboard.dart';
 
 class ProductListScreen extends StatefulWidget {
   final Item item;
@@ -13,7 +14,43 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  Map<String, int> frequentlyBoughtItems = {} ;
+  late List<Item> _itemList;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    final prefs = await SharedPreferences.getInstance();
+    final itemListJson = prefs.getString('itemList');
+    if (itemListJson != null) {
+      final List<dynamic> decoded = jsonDecode(itemListJson);
+      setState(() {
+        _itemList = decoded.map((json) => Item.fromJson(json)).toList();
+      });
+    } else {
+      _itemList = [];
+    }
+  }
+
+  Future<void> _saveItems() async {
+    final prefs = await SharedPreferences.getInstance();
+    final itemListJson = jsonEncode(_itemList.map((item) => item.toJson()).toList());
+    prefs.setString('itemList', itemListJson);
+  }
+
+  void _updateItemInList(Item updatedItem) {
+    setState(() {
+      final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
+      if (index != -1) {
+        _itemList[index] = updatedItem;
+      }
+      _saveItems(); // Save the entire item list after updating
+    });
+  }
+
   void _navigateToAddItemScreen() {
     Navigator.push(
       context,
@@ -39,12 +76,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-
-              if (frequentlyBoughtItems.containsKey(itemName)) {
-                frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + quantity;
-              } else {
-                frequentlyBoughtItems[itemName] = quantity;
-              }
+              _updateItemInList(widget.item); // Save changes
             });
           },
           budget: widget.item.budget,
@@ -66,6 +98,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
+              _updateItemInList(widget.item); // Save changes
             });
           },
           initialName: product.name,
@@ -103,6 +136,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
+            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),

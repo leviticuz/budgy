@@ -124,29 +124,6 @@ class CreateTab extends StatelessWidget {
                               labelText: 'Budget (₱)',
                               border: InputBorder.none,
                             ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(7),
-                            ],
-                            onChanged: (value) {
-                              String newValue = value.replaceAll(',', '');
-
-                              if (newValue.isNotEmpty &&
-                                  int.tryParse(newValue) != null) {
-                                int parsedValue = int.parse(newValue);
-                                if (parsedValue >= 100) {
-                                  budgetController.value = TextEditingValue(
-                                    text: newValue,
-                                    selection: TextSelection.collapsed(
-                                      offset: newValue.length,
-                                    ),
-                                  );
-                                } else {
-                                  budgetController.text = '100';
-                                }
-                              }
-                            },
                           ),
                           Text(
                             'Minimum budget is ₱100',
@@ -157,6 +134,7 @@ class CreateTab extends StatelessWidget {
                           ),
                         ],
                       ),
+
                     ),
                     Wrap(
                       spacing: 8,
