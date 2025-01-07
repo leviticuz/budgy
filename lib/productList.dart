@@ -47,14 +47,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
-      _saveItems();
-    });
-  }
-
-  void _deleteItemFromList(Item itemToDelete) {
-    setState(() {
-      _itemList.removeWhere((item) => item.title == itemToDelete.title);
-      _saveItems();
+      _saveItems(); // Save the entire item list after updating
     });
   }
 
@@ -83,7 +76,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-              _updateItemInList(widget.item);
+              _updateItemInList(widget.item); // Save changes
             });
           },
           budget: widget.item.budget,
@@ -105,7 +98,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item);
+              _updateItemInList(widget.item); // Save changes
             });
           },
           initialName: product.name,
@@ -117,8 +110,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  double _calculateTotalCost() {
+    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  }
+
   @override
   Widget build(BuildContext context) {
+    double totalCost = _calculateTotalCost();
+    double balance = widget.item.budget - totalCost;
+
+    bool isOverBudget = totalCost > widget.item.budget;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFFB1E8DE),
@@ -146,7 +148,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     onDismissed: (direction) {
                       setState(() {
                         widget.item.items.removeAt(index);
-                        _updateItemInList(widget.item);
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("${product.name} deleted")),
@@ -171,7 +172,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           onChanged: (bool? value) {
                             setState(() {
                               product.isChecked = value!;
-                              _updateItemInList(widget.item);
                             });
                           },
                         ),
@@ -213,6 +213,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ),
                   );
                 },
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(8),
+              color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                  Container(
+                    color: isOverBudget ? Colors.red : Colors.teal.shade100,
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Balance: ₱${balance.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isOverBudget ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -81,6 +81,40 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Budget Validation Method
+  void _validateBudget() {
+    String budgetText = _budgetController.text.trim();
+    double? budget = double.tryParse(budgetText);
+
+    // Check if the input is a valid number
+    if (budget == null) {
+      // Not a valid number
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid number for the budget')),
+      );
+      return;
+    }
+
+    // Check if the budget is less than ₱100
+    if (budget < 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Budget must be at least ₱100')),
+      );
+      return;
+    }
+
+    // Check if the budget exceeds 7 digits (greater than 9,999,999)
+    if (budget > 9999999) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Budget cannot exceed ₱9,999,999')),
+      );
+      return;
+    }
+
+    // If all checks pass, proceed to add the item
+    _addItemToList(_titleController.text, budget, _selectedDate);
+  }
+
   Widget _currentPage() {
     switch (_selectedIndex) {
       case 0:
@@ -142,14 +176,23 @@ class _HomePageState extends State<HomePage> {
             ? [
           TextButton(
             onPressed: () {
-              if (_titleController.text.isNotEmpty &&
-                  _budgetController.text.isNotEmpty) {
-                double budget = double.parse(_budgetController.text);
-                _addItemToList(
-                  _titleController.text,
-                  budget,
-                  _selectedDate,
+              if (_titleController.text.isNotEmpty ) {
+                if(
+                _budgetController.text.isNotEmpty){
+                  _validateBudget();
+                }
+                else{
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Budget is required')),
+                  );
+                  return;
+                }
+              }
+              else{
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Title is required')),
                 );
+                return;
               }
             },
             child: Text(
