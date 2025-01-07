@@ -57,6 +57,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
+                double price = double.parse(_priceController.text.replaceAll(',', ''));
+                int quantity = int.parse(_quantityController.text);
+                widget.onAddItem(_productController.text, price, quantity);
+                Navigator.pop(context);
                 Navigator.pop(context);
               },
               child: Text("Yes", style: TextStyle(color: Colors.white)),
@@ -73,10 +77,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
             ),
             TextButton(
               onPressed: () {
-                double price = double.parse(_priceController.text.replaceAll(',', ''));
-                int quantity = int.parse(_quantityController.text);
-                widget.onAddItem(_productController.text, price, quantity);
-                Navigator.pop(context);
                 Navigator.pop(context);
               },
               child: Text("No", style: TextStyle(color: Colors.white)),
@@ -115,21 +115,31 @@ class _AddItemScreenState extends State<AddItemScreen> {
           IconButton(
             icon: Icon(Icons.search),
             onPressed: () async {
+              // Navigate to the search screen and wait for the selected item
               final selectedItem = await Navigator.push<Item>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const Searchbar(),
+                  builder: (context) => const Searchbar(),  // The search screen
                 ),
               );
+
+              // If an item is selected, populate the text fields
               if (selectedItem != null) {
                 setState(() {
-                  _productController.text = selectedItem.item_name!;
-                  _priceController.text = selectedItem.item_price.toString();
-                  _quantityController.text = '1';
+                  // Check if the item_cost is available (not "N/A")
+                  if (selectedItem.item_cost != null && selectedItem.item_cost != 'n/a') {
+                    _priceController.text = selectedItem.item_cost.toString();  // Use item_cost
+                  } else {
+                    _priceController.text = selectedItem.item_price.toString();  // Use item_price if item_cost is unavailable
+                  }
+
+                  _productController.text = selectedItem.item_name!;  // Set the item name
+                  _quantityController.text = '1';  // Default quantity to 1
                 });
               }
             },
           ),
+
         ],
       ),
       body: Padding(
@@ -164,6 +174,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         labelText: 'Item Name',
                         border: InputBorder.none,
                       ),
+                      enabled: true,  // Disable editing for the item name
                     ),
                   ),
                   Container(
@@ -186,30 +197,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         labelText: 'Price (₱)',
                         border: InputBorder.none,
                       ),
-                      keyboardType: TextInputType.numberWithOptions(signed: false, decimal: true),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
-                      ],
-                      onChanged: (value) {
-                        if (value.length > 8) return;
-                        if (value.isNotEmpty) {
-                          String newValue = value.replaceAll(',', '');
-                          double parsedValue = double.tryParse(newValue) ?? 0;
-                          if (!newValue.contains('.')) {
-                            _priceController.value = TextEditingValue(
-                              text: NumberFormat("#,##0").format(parsedValue),
-                              selection: TextSelection.collapsed(
-                                offset: NumberFormat("#,##0").format(parsedValue).length,
-                              ),
-                            );
-                          } else {
-                            _priceController.value = TextEditingValue(
-                              text: newValue,
-                              selection: TextSelection.collapsed(offset: newValue.length),
-                            );
-                          }
-                        }
-                      },
+                      enabled: true,  // Disable editing for the price
                     ),
                   ),
                   Container(
@@ -278,10 +266,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       }
                     }
                   },
-                    child: Text(
-                      widget.initialName != null ? 'Save Changes' : 'Add Item',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  child: Text(
+                    widget.initialName != null ? 'Save Changes' : 'Add Item',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal.shade700,
                     foregroundColor: Colors.white,
