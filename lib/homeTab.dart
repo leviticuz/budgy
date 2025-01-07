@@ -28,15 +28,15 @@ class HomeTab extends StatelessWidget {
             );
           },
           background: Container(
-            margin: EdgeInsets.symmetric(vertical: 8), // Add margin here
+            margin: EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: Colors.red,
-              borderRadius: BorderRadius.circular(16), // Set the same radius as the card
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Icon(Icons.delete, color: Colors.white),
               ),
             ),

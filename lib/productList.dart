@@ -51,6 +51,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
+  double _calculateTotalCost() {
+    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  }
+
   void _navigateToAddItemScreen() {
     Navigator.push(
       context,
@@ -80,11 +84,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
             });
           },
           budget: widget.item.budget,
+          currentTotalCost: _calculateTotalCost(), // Ensure this is passed correctly
         ),
       ),
     );
   }
 
+
+  // Ensure the method _navigateToEditItemScreen is properly defined.
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
       context,
@@ -104,14 +111,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
           initialName: product.name,
           initialPrice: product.price,
           initialQuantity: product.quantity,
-          budget: widget.item.budget,
+          budget: widget.item.budget, currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
-  }
-
-  double _calculateTotalCost() {
-    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   @override
