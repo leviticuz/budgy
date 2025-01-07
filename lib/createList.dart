@@ -64,8 +64,6 @@ class CreateTab extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    // Date Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -94,13 +92,23 @@ class CreateTab extends StatelessWidget {
                           ),
                           IconButton(
                             icon: Icon(Icons.calendar_today),
-                            onPressed: onSelectDate,
+                            onPressed: () async {
+                              DateTime today = DateTime.now();
+                              DateTime? selectedDate = await showDatePicker(
+                                context: context,
+                                initialDate: today,
+                                firstDate: today,
+                                lastDate: DateTime(today.year + 7),
+                              );
+                              if (selectedDate != null && selectedDate != this.selectedDate) {
+                                dateController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date as needed
+                                onDatePicked(selectedDate);
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
-
-                    // Budget Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -124,6 +132,10 @@ class CreateTab extends StatelessWidget {
                               labelText: 'Budget (₱)',
                               border: InputBorder.none,
                             ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
+                            ],
                           ),
                           Text(
                             'Minimum budget is ₱100',
