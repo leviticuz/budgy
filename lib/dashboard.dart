@@ -1,17 +1,43 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pie_chart/pie_chart.dart';
-import 'productList.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Dashboard extends StatelessWidget {
-  final Map<String, int> frequentlyBoughtItems;
+class Dashboard extends StatefulWidget {
+  Dashboard({Key? key, required Map<String, int> frequentlyBoughtItems}) : super(key: key);
 
-  Dashboard({required this.frequentlyBoughtItems});
+  @override
+  _DashboardState createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  Map<String, int> frequentlyBoughtItems = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFrequentlyBoughtItems();
+  }
+
+  Future<void> _loadFrequentlyBoughtItems() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? storedData = prefs.getString('frequentlyBoughtItems');
+
+    if (storedData != null) {
+      final Map<String, int> loadedData = Map<String, int>.from(jsonDecode(storedData));
+      setState(() {
+        frequentlyBoughtItems = loadedData;
+      });
+    } else {
+      setState(() {
+        frequentlyBoughtItems = {};
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = frequentlyBoughtItems ?? {};
-
-    if (data.isEmpty) {
+    if (frequentlyBoughtItems.isEmpty) {
       return Scaffold(
         backgroundColor: Color(0xFFB1E8DE),
         body: Center(
@@ -57,10 +83,11 @@ class Dashboard extends StatelessWidget {
         ),
       );
     }
-    List<MapEntry<String, int>> sortedItems = data.entries.toList()
+
+    List<MapEntry<String, int>> sortedItems = frequentlyBoughtItems.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    List<MapEntry<String, int>> topItems = sortedItems.take(5).toList();
+    List<MapEntry<String, int>> topItems = sortedItems.take(6).toList();
 
     Map<String, double> dataMap = {};
     for (var entry in topItems) {
@@ -97,7 +124,7 @@ class Dashboard extends StatelessWidget {
               SizedBox(height: 20),
               PieChart(
                 dataMap: dataMap,
-                chartRadius: MediaQuery.of(context).size.width / 3.5,
+                chartRadius: MediaQuery.of(context).size.width / 1.5,
                 legendOptions: LegendOptions(
                   legendPosition: LegendPosition.bottom,
                   showLegendsInRow: true,

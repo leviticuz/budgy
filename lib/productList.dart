@@ -47,8 +47,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
-      _saveItems(); // Save the entire item list after updating
+      _saveItems();
     });
+  }
+
+  Future<void> _saveFrequentlyBoughtItems(Map<String, int> updatedMap) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String jsonString = jsonEncode(updatedMap);
+    await prefs.setString('frequentlyBoughtItems', jsonString);
+  }
+
+  void _updateFrequentlyBoughtItems() {
+    final Map<String, int> updatedMap = {};
+
+    for (var item in widget.item.items) {
+      updatedMap[item.name] = (updatedMap[item.name] ?? 0) + item.quantity;
+    }
+
+    _saveFrequentlyBoughtItems(updatedMap);
   }
 
   void _navigateToAddItemScreen() {
@@ -76,7 +92,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-              _updateItemInList(widget.item); // Save changes
+              _updateFrequentlyBoughtItems(); // Update SharedPreferences
+              _saveItems();
             });
           },
           budget: widget.item.budget,
@@ -84,7 +101,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
-
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
       context,
@@ -98,7 +114,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item); // Save changes
+              _updateItemInList(widget.item);
             });
           },
           initialName: product.name,
