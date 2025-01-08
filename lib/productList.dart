@@ -51,8 +51,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
-  double _calculateTotalCost() {
-    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  Future<void> _saveFrequentlyBoughtItems(Map<String, int> updatedMap) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String jsonString = jsonEncode(updatedMap);
+    await prefs.setString('frequentlyBoughtItems', jsonString);
+  }
+
+  void _updateFrequentlyBoughtItems() {
+    final Map<String, int> updatedMap = {};
+
+    for (var item in widget.item.items) {
+      updatedMap[item.name] = (updatedMap[item.name] ?? 0) + item.quantity;
+    }
+
+    _saveFrequentlyBoughtItems(updatedMap);
   }
 
   void _navigateToAddItemScreen() {
@@ -80,17 +92,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-              _updateItemInList(widget.item);
+              _updateFrequentlyBoughtItems(); // Update SharedPreferences
+              _saveItems();
             });
           },
           budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
   }
-
-
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
       context,
@@ -110,10 +120,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
           initialName: product.name,
           initialPrice: product.price,
           initialQuantity: product.quantity,
-          budget: widget.item.budget, currentTotalCost: _calculateTotalCost(),
+          budget: widget.item.budget,
         ),
       ),
     );
+  }
+
+  double _calculateTotalCost() {
+    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   @override

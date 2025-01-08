@@ -2,7 +2,6 @@ import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
-import 'package:Budgy/user_db.dart';
 
 class Searchbar extends StatefulWidget {
   const Searchbar({super.key});
@@ -20,10 +19,7 @@ class _SearchbarState extends State<Searchbar> {
 
   void initState() {
     super.initState();
-    item_list.clear(); // Clear the item list before fetching new data
-    display_list.clear();
     fetchDataFromFirebase();
-    fetchDataFromSQLite();
   }
 
   Future<void> fetchDataFromFirebase() async {
@@ -45,7 +41,7 @@ class _SearchbarState extends State<Searchbar> {
         List<Item> tempList = [];
         data.forEach((key, category) {
           final categoryName = category['name'] ?? ''; // Extract category name
-          final items = Map<String, dynamic>.from(category['items'] );
+          final items = Map<String, dynamic>.from(category['items']);
           items.forEach((_, itemData) {
             tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
           });
@@ -69,29 +65,12 @@ class _SearchbarState extends State<Searchbar> {
     }
   }
 
-  Future<void> fetchDataFromSQLite() async {
-    try {
-      // Fetch items from SQLite database
-      final itemsFromSQLite = await DatabaseService.instance.getAllItems();
-
-      // No need to map because `getAllItems()` already returns a list of `Item` objects
-      setState(() {
-        item_list.addAll(itemsFromSQLite);
-        display_list = List.from(item_list);
-      });
-    } catch (e) {
-      print("Error fetching data from SQLite: $e");
-    }
-  }
-
   Future<void> _refreshData() async {
     setState(() {
       isLoading = true;
-      item_list.clear(); // Clear the item list before fetching new data
-      display_list.clear(); // Clear the display list to avoid duplication
+      display_list.clear();
     });
     await fetchDataFromFirebase();
-    await fetchDataFromSQLite();
   }
 
   void updateList(String value) {

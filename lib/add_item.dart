@@ -1,4 +1,3 @@
-import 'package:Budgy/user_db.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dummyItems.dart';
@@ -12,7 +11,6 @@ class AddItemScreen extends StatefulWidget {
   final int? initialQuantity;
   final double budget;
   final Item? selectedItem;
-  final double currentTotalCost;
 
   AddItemScreen({
     required this.onAddItem,
@@ -21,7 +19,6 @@ class AddItemScreen extends StatefulWidget {
     this.initialQuantity,
     required this.budget,
     this.selectedItem,
-    required this.currentTotalCost,
   });
 
   @override
@@ -29,18 +26,12 @@ class AddItemScreen extends StatefulWidget {
 }
 
 class _AddItemScreenState extends State<AddItemScreen> {
-
-  final DatabaseService _databaseService = DatabaseService.instance;
-
   late TextEditingController _productController;
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
   String? _productError;
   String? _priceError;
   String? _quantityError;
-
-  bool _isProductManuallyEntered = false;
-  bool _isPriceManuallyEntered = false;
 
   @override
   void initState() {
@@ -52,25 +43,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
         : '');
     _quantityController = TextEditingController(text: widget.initialQuantity?.toString() ?? '');
 
-    _productController.addListener((){
-      setState(() {
-        _isProductManuallyEntered = true;
-      });
-    });
-
-    _priceController.addListener(() {
-      setState(() {
-        _isPriceManuallyEntered = true;
-      });
-    });
-
     if (widget.selectedItem != null) {
       _productController.text = widget.selectedItem!.item_name!;
       _priceController.text = widget.selectedItem!.item_price.toString();
       _quantityController.text = '1';
-
-      _isProductManuallyEntered = false;
-      _isPriceManuallyEntered = false;
     }
   }
 
@@ -280,11 +256,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     setState(() {
                       _productError = null;
                       _priceError = null;
                       _quantityError = null;
+
                     });
 
                     if (_productController.text.isNotEmpty &&
@@ -293,59 +270,28 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       double price = double.parse(_priceController.text.replaceAll(',', ''));
                       int quantity = int.parse(_quantityController.text);
                       double total = price * quantity;
-                      double newTotalCost = widget.currentTotalCost + total;
-                      String name = _productController.text;
-                      bool itemExist = await _databaseService.checkItemExistsInFirebase(name);
 
-                      if (newTotalCost > widget.budget) {
+                      if (total > widget.budget) {
                         _showWarningDialog();
                       } else {
                         widget.onAddItem(_productController.text, price, quantity);
                         Navigator.pop(context);
                       }
-
-                      if (!itemExist) {
-                        try {
-                          await _databaseService.addItem(name, price);  // Await the addItem operation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Item has been added successfully'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        } catch (e) {
-                          // Handle any errors that occur during the insertion
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to add item: $e'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        }
-                      }
-
                     } else {
                       if (_productController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Item Name is required'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      } else if (_priceController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Item price is required'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      } else if (_quantityController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Item Quantity is required'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
+                        setState(() {
+                          _productError = "Item name cannot be empty";
+                        });
+                      }
+                      if (_priceController.text.isEmpty) {
+                        setState(() {
+                          _priceError = "Price cannot be empty";
+                        });
+                      }
+                      if (_quantityController.text.isEmpty) {
+                        setState(() {
+                          _quantityError = "Quantity cannot be empty";
+                        });
                       }
                     }
                   },

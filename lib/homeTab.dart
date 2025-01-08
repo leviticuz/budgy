@@ -49,19 +49,19 @@ class HomeTab extends StatelessWidget {
                 'Budget: ₱${item.budget.toStringAsFixed(2)}\nDate: ${DateFormat('yyyy-MM-dd').format(item.date)}',
               ),
               trailing: Stack(
-                clipBehavior: Clip.none,  // Allow the text to overflow
+                clipBehavior: Clip.none,
                 children: [
                   // Reduced opacity text
                   Positioned(
                     bottom: 0,
                     right: 30,
                     child: Opacity(
-                      opacity: 0.5,  // Reduced opacity
+                      opacity: 0.5,
                       child: Text(
                         "Slide to delete",
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey, // You can choose any color you want
+                          color: Colors.grey,
                         ),
                       ),
                     ),

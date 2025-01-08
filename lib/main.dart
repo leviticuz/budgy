@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
 import 'homePage.dart';
-import 'homeTab.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: FirebaseOptions(
-        apiKey: "AIzaSyAGO_gr7T22z7PM-g8PiHMp4FHS4IBiU3A",
-        authDomain: "dti-srp.firebaseapp.com",
-        databaseURL: "https://dti-srp-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "dti-srp",
-        storageBucket: "dti-srp.firebasestorage.app",
-        messagingSenderId: "821902090102",
-        appId: "1:821902090102:web:c66858657bcc1adcfc2457",
-        measurementId: "G-NMWYLMX8BL",
+      apiKey: "AIzaSyAGO_gr7T22z7PM-g8PiHMp4FHS4IBiU3A",
+      authDomain: "dti-srp.firebaseapp.com",
+      databaseURL: "https://dti-srp-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dti-srp",
+      storageBucket: "dti-srp.firebasestorage.app",
+      messagingSenderId: "821902090102",
+      appId: "1:821902090102:web:c66858657bcc1adcfc2457",
+      measurementId: "G-NMWYLMX8BL",
     ),
   );
-  runApp(const MyApp());
+
+  final prefs = await SharedPreferences.getInstance();
+  final seenGetStarted = prefs.getBool('seenGetStarted') ?? false;
+
+  runApp(MyApp(seenGetStarted: seenGetStarted));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool seenGetStarted;
+
+  const MyApp({super.key, required this.seenGetStarted});
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +36,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.teal,
       ),
-      home:GetStarted(),
+      home: seenGetStarted ? LoadingScreen() : GetStarted(),
     );
   }
 }
-
 
 class GetStarted extends StatelessWidget {
   const GetStarted({super.key});
@@ -43,35 +48,22 @@ class GetStarted extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color:  Color(0xFFB1E8DE),
+        color: Color(0xFFB1E8DE),
         child: Column(
           children: [
-            SizedBox(height: 180),//80
-            /*Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Budgy",
-                  style: TextStyle(
-                    fontSize: 32,
-                    color: Color(0xFF1BBEA1),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),*/
+            SizedBox(height: 180),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/UpdatedLogo.png')
               ],
             ),
-            SizedBox(height: 160),//90
+            SizedBox(height: 160),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  child:Text(
+                  child: Text(
                     "Get Started",
                     style: TextStyle(
                       fontSize: 24,
@@ -79,7 +71,9 @@ class GetStarted extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('seenGetStarted', true);
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => HomePage()),
@@ -95,6 +89,40 @@ class GetStarted extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LoadingScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    Future.delayed(Duration(seconds: 2), () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    });
+    return Scaffold(
+      body: Container(
+        color: Color(0xFFB1E8DE),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/UpdatedLogo.png'),
+              ],
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
             ),
           ],
         ),
