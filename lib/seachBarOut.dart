@@ -117,18 +117,20 @@ class _SeachbaroutState extends State<Seachbarout> {
     return Scaffold(
       body: Container(
         color: Color(0xFFB1E8DE),
-        child: Padding(
-          padding: EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Enter category to search", style: TextStyle(
-                color: Colors.teal.shade900,
-                fontSize: 22.0,
-                fontWeight: FontWeight.bold,
-              )),
-              SizedBox(height: 20),
+              AppBar(
+                backgroundColor: Color(0xFF5BB7A6),
+                title: Text("Enter category to search", style: TextStyle(
+                  color: Colors.teal.shade900,
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                )
+              ),
+              ),
+              SizedBox(height: 13),
               TextField(
                 onChanged: (value) => updateCategory(value),
                 decoration: InputDecoration(
@@ -222,7 +224,6 @@ class _SeachbaroutState extends State<Seachbarout> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
