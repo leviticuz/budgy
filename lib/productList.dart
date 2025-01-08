@@ -47,24 +47,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
-      _saveItems();
+      _saveItems(); // Save the entire item list after updating
     });
-  }
-
-  Future<void> _saveFrequentlyBoughtItems(Map<String, int> updatedMap) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = jsonEncode(updatedMap);
-    await prefs.setString('frequentlyBoughtItems', jsonString);
-  }
-
-  void _updateFrequentlyBoughtItems() {
-    final Map<String, int> updatedMap = {};
-
-    for (var item in widget.item.items) {
-      updatedMap[item.name] = (updatedMap[item.name] ?? 0) + item.quantity;
-    }
-
-    _saveFrequentlyBoughtItems(updatedMap);
   }
 
   void _navigateToAddItemScreen() {
@@ -75,6 +59,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
               bool itemExists = false;
+
+              // Update the frequency of the added item
               for (var existingItem in widget.item.items) {
                 if (existingItem.name == itemName) {
                   existingItem.quantity += quantity;
@@ -92,15 +78,43 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-              _updateFrequentlyBoughtItems(); // Update SharedPreferences
-              _saveItems();
+
+              // Save the updated items list to SharedPreferences
+              _updateItemInList(widget.item);
+
+              // Update frequently bought items in SharedPreferences
+              _updateFrequentlyBoughtItems(itemName);
             });
           },
           budget: widget.item.budget,
+          currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
   }
+
+  Future<void> _updateFrequentlyBoughtItems(String itemName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? storedData = prefs.getString('frequentlyBoughtItems');
+
+    Map<String, int> frequentlyBoughtItems = {};
+
+    // Load existing data from SharedPreferences if available
+    if (storedData != null) {
+      frequentlyBoughtItems = Map<String, int>.from(jsonDecode(storedData));
+    }
+
+    // Update frequency of the item
+    if (frequentlyBoughtItems.containsKey(itemName)) {
+      frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + 1;
+    } else {
+      frequentlyBoughtItems[itemName] = 1;
+    }
+
+    // Save updated data to SharedPreferences
+    prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
+  }
+
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
       context,
@@ -114,13 +128,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item);
+              _updateItemInList(widget.item); // Save changes
             });
           },
           initialName: product.name,
           initialPrice: product.price,
           initialQuantity: product.quantity,
-          budget: widget.item.budget,
+          budget: widget.item.budget,currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );

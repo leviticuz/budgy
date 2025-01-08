@@ -1,6 +1,7 @@
 import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:Budgy/user_db.dart';
 import 'dart:async';
 
 class Seachbarout extends StatefulWidget {
@@ -17,11 +18,17 @@ class _SeachbaroutState extends State<Seachbarout> {
   String loadingMessage = "Loading data...";
   bool networkError = false;
 
+  String category = ""; // User input category
+
   void initState() {
     super.initState();
+    item_list.clear(); // Clear the item list before fetching new data
+    display_list.clear();
     fetchDataFromFirebase();
+    fetchDataFromSQLite();
   }
 
+  // Fetch Firebase data
   Future<void> fetchDataFromFirebase() async {
     final DatabaseReference database = FirebaseDatabase.instance.ref('products');
 
@@ -39,15 +46,17 @@ class _SeachbaroutState extends State<Seachbarout> {
       if (snapshot.exists) {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         List<Item> tempList = [];
-        data.forEach((key, category) {
-          final categoryName = category['name'] ?? ''; // Extract category name
-          final items = Map<String, dynamic>.from(category['items']);
-          items.forEach((_, itemData) {
-            tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
-          });
+        data.forEach((key, categoryData) {
+          final categoryName = categoryData['name'] ?? ''; // Extract category name
+          if (category.isEmpty || categoryName.toLowerCase().contains(category.toLowerCase())) {
+            final items = Map<String, dynamic>.from(categoryData['items']);
+            items.forEach((_, itemData) {
+              tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
+            });
+          }
         });
         setState(() {
-          item_list = tempList;
+          item_list.addAll(tempList);
           display_list = List.from(item_list);
           isLoading = false;
         });
@@ -65,18 +74,39 @@ class _SeachbaroutState extends State<Seachbarout> {
     }
   }
 
+  // Fetch SQLite data
+  Future<void> fetchDataFromSQLite() async {
+    try {
+      // Fetch items from SQLite database
+      final itemsFromSQLite = await DatabaseService.instance.getAllItems();
+
+      // No need to map because `getAllItems()` already returns a list of `Item` objects
+      setState(() {
+        item_list.addAll(itemsFromSQLite);
+        display_list = List.from(item_list);
+      });
+    } catch (e) {
+      print("Error fetching data from SQLite: $e");
+    }
+  }
+
+  // Refresh data on pull-to-refresh
   Future<void> _refreshData() async {
     setState(() {
       isLoading = true;
-      display_list.clear();
+      item_list.clear(); // Clear the item list before fetching new data
+      display_list.clear(); // Clear the display list to avoid duplication
     });
     await fetchDataFromFirebase();
+    await fetchDataFromSQLite();
   }
 
-  void updateList(String value) {
+  // Update list based on user input
+  void updateCategory(String value) {
     setState(() {
+      category = value;
       display_list = item_list.where((element) =>
-      element.category_name!.toLowerCase().contains(value.toLowerCase()) ||
+      (element.category_name != null && element.category_name!.toLowerCase().contains(value.toLowerCase())) ||
           element.item_name!.toLowerCase().contains(value.toLowerCase())
       ).toList();
     });
@@ -93,14 +123,14 @@ class _SeachbaroutState extends State<Seachbarout> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Enter item to search", style: TextStyle(
+              Text("Enter category to search", style: TextStyle(
                 color: Colors.teal.shade900,
                 fontSize: 22.0,
                 fontWeight: FontWeight.bold,
               )),
               SizedBox(height: 20),
               TextField(
-                onChanged: (value) => updateList(value),
+                onChanged: (value) => updateCategory(value),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
@@ -108,7 +138,7 @@ class _SeachbaroutState extends State<Seachbarout> {
                     borderRadius: BorderRadius.circular(9.0),
                     borderSide: BorderSide.none,
                   ),
-                  hintText: "eg: Canned Sardines",
+                  hintText: "Enter category (e.g. Drinks)",
                   prefixIcon: Icon(Icons.search),
                 ),
               ),
