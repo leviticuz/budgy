@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'productList.dart';
-import 'item_details.dart';
+import 'productList.dart';  // Ensure this import is present
+import 'item_details.dart';  // Other imports you might need
 
 class HomeTab extends StatelessWidget {
   final List<Item> itemList;
@@ -49,19 +49,19 @@ class HomeTab extends StatelessWidget {
                 'Budget: ₱${item.budget.toStringAsFixed(2)}\nDate: ${DateFormat('yyyy-MM-dd').format(item.date)}',
               ),
               trailing: Stack(
-                clipBehavior: Clip.none,
+                clipBehavior: Clip.none,  // Allow the text to overflow
                 children: [
                   // Reduced opacity text
                   Positioned(
                     bottom: 0,
                     right: 30,
                     child: Opacity(
-                      opacity: 0.5,
+                      opacity: 0.5,  // Reduced opacity
                       child: Text(
                         "Slide to delete",
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: Colors.grey, // You can choose any color you want
                         ),
                       ),
                     ),
@@ -74,13 +74,12 @@ class HomeTab extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ProductListScreen(item: item),
+                    builder: (context) => ProductListScreen(item: item),  // Ensure this works now
                   ),
                 );
               },
             ),
           ),
-
         );
       },
     );

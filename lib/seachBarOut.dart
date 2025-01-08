@@ -1,7 +1,8 @@
+
 import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:Budgy/user_db.dart';
+import 'package:Budgy/user_db.dart'; // Update with the correct path
 import 'dart:async';
 
 class Seachbarout extends StatefulWidget {
@@ -117,17 +118,17 @@ class _SeachbaroutState extends State<Seachbarout> {
     return Scaffold(
       body: Container(
         color: Color(0xFFB1E8DE),
-        child: Padding(
-          padding: EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Enter category to search", style: TextStyle(
-                color: Colors.teal.shade900,
-                fontSize: 22.0,
-                fontWeight: FontWeight.bold,
-              )),
+              AppBar(
+                backgroundColor: Color(0xFF5BB7A6),
+                title: Text("Enter category to search", style: TextStyle(
+                  color: Colors.white,
+                )),
+              ),
+
               SizedBox(height: 20),
               TextField(
                 onChanged: (value) => updateCategory(value),
@@ -222,7 +223,6 @@ class _SeachbaroutState extends State<Seachbarout> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

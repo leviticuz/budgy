@@ -249,6 +249,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         border: InputBorder.none,
                         errorText: _quantityError,
                       ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(4),
