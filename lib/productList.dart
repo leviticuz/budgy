@@ -47,7 +47,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
-      _saveItems(); // Save the entire item list after updating
+      _saveItems();
     });
   }
 
@@ -59,8 +59,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
           onAddItem: (String itemName, double itemPrice, int quantity) {
             setState(() {
               bool itemExists = false;
-
-              // Update the frequency of the added item
               for (var existingItem in widget.item.items) {
                 if (existingItem.name == itemName) {
                   existingItem.quantity += quantity;
@@ -78,11 +76,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-
-              // Save the updated items list to SharedPreferences
               _updateItemInList(widget.item);
-
-              // Update frequently bought items in SharedPreferences
               _updateFrequentlyBoughtItems(itemName);
             });
           },
@@ -99,19 +93,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
     Map<String, int> frequentlyBoughtItems = {};
 
-    // Load existing data from SharedPreferences if available
     if (storedData != null) {
       frequentlyBoughtItems = Map<String, int>.from(jsonDecode(storedData));
     }
-
-    // Update frequency of the item
     if (frequentlyBoughtItems.containsKey(itemName)) {
       frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + 1;
     } else {
       frequentlyBoughtItems[itemName] = 1;
     }
-
-    // Save updated data to SharedPreferences
     prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
   }
 
@@ -209,7 +198,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         title: Text(
                           product.name,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             decoration: product.isChecked
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
@@ -218,7 +207,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 12)),
                             Text(
                               'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
                               style: TextStyle(color: Colors.black54),
@@ -230,7 +219,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           children: [
                             Text(
                               'Qty: ${product.quantity}',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 14),
                             ),
                             IconButton(
                               icon: Icon(Icons.more_vert),
