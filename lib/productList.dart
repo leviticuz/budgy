@@ -50,22 +50,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       _saveItems();
     });
   }
-  Future<void> _saveFrequentlyBoughtItems(Map<String, int> updatedMap) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = jsonEncode(updatedMap);
-    await prefs.setString('frequentlyBoughtItems', jsonString);
-  }
-
-  void _updateFrequentlyBoughtItems() {
-    final Map<String, int> updatedMap = {};
-
-    for (var item in widget.item.items) {
-      updatedMap[item.name] = (updatedMap[item.name] ?? 0) + item.quantity;
-    }
-
-    _saveFrequentlyBoughtItems(updatedMap);
-  }
-
 
   double _calculateTotalCost() {
     return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
@@ -97,7 +81,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 );
               }
               _updateItemInList(widget.item);
-              _updateFrequentlyBoughtItems();
             });
           },
           budget: widget.item.budget,
@@ -106,6 +89,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
+
 
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
@@ -126,8 +110,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           initialName: product.name,
           initialPrice: product.price,
           initialQuantity: product.quantity,
-          budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(),
+          budget: widget.item.budget, currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
@@ -151,128 +134,114 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Centered logo
-          Center(
-            child: Opacity(
-              opacity: 0.3,  // Adjust the opacity to make the logo subtle
-              child: Image.asset(
-                'assets/LabeledLogo.png',  // Replace with your logo path
-              ),
-            ),
-          ),
-          // Main content
-          Container(
-            color: Color(0xFFB1E8DE),
-            child: Column(
-              children: [
-                Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: widget.item.items.length,
-                    itemBuilder: (context, index) {
-                      final product = widget.item.items[index];
-                      return Dismissible(
-                        key: Key(product.name),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (direction) {
-                          setState(() {
-                            widget.item.items.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("${product.name} deleted")),
-                          );
-                        },
-                        background: Container(
-                          margin: EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          alignment: Alignment.centerRight,
-                          padding: EdgeInsets.all(16.0),
-                          child: Icon(Icons.delete, color: Colors.white),
-                        ),
-                        child: Card(
-                          margin: EdgeInsets.symmetric(vertical: 8),
-                          color: product.isChecked ? Colors.grey.shade200 : Colors.white,
-                          child: ListTile(
-                            leading: Checkbox(
-                              value: product.isChecked,
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  product.isChecked = value!;
-                                });
-                              },
-                            ),
-                            title: Text(
-                              product.name,
-                              style: TextStyle(
-                                fontSize: 14,
-                                decoration: product.isChecked
-                                    ? TextDecoration.lineThrough
-                                    : TextDecoration.none,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 12)),
-                                Text(
-                                  'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
-                                  style: TextStyle(color: Colors.black54, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Qty: ${product.quantity}',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.more_vert),
-                                  onPressed: () {
-                                    _navigateToEditItemScreen(index, product);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+      body: Container(
+        color: Color(0xFFB1E8DE),
+        child: Column(
+          children: [
+            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(16),
+                itemCount: widget.item.items.length,
+                itemBuilder: (context, index) {
+                  final product = widget.item.items[index];
+                  return Dismissible(
+                    key: Key(product.name),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (direction) {
+                      setState(() {
+                        widget.item.items.removeAt(index);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("${product.name} deleted")),
                       );
                     },
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.all(8),
-                  color: Colors.white,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
-                      Container(
-                        color: isOverBudget ? Colors.red : Colors.teal.shade100,
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Text(
-                          'Balance: ₱${balance.toStringAsFixed(2)}',
+                    background: Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.all(16.0),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: Card(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      color: product.isChecked ? Colors.grey.shade200 : Colors.white,
+                      child: ListTile(
+                        leading: Checkbox(
+                          value: product.isChecked,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              product.isChecked = value!;
+                            });
+                          },
+                        ),
+                        title: Text(
+                          product.name,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isOverBudget ? Colors.white : Colors.black,
+                            fontSize: 18,
+                            decoration: product.isChecked
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
                           ),
                         ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                            Text(
+                              'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Qty: ${product.quantity}',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.more_vert),
+                              onPressed: () {
+                                _navigateToEditItemScreen(index, product);
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            Container(
+              padding: EdgeInsets.all(8),
+              color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                  Container(
+                    color: isOverBudget ? Colors.red : Colors.teal.shade100,
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Balance: ₱${balance.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isOverBudget ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
