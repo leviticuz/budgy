@@ -1,3 +1,4 @@
+import 'package:Budgy/user_db.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dummyItems.dart';
@@ -28,12 +29,18 @@ class AddItemScreen extends StatefulWidget {
 }
 
 class _AddItemScreenState extends State<AddItemScreen> {
+
+  final DatabaseService _databaseService = DatabaseService.instance;
+
   late TextEditingController _productController;
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
   String? _productError;
   String? _priceError;
   String? _quantityError;
+
+  bool _isProductManuallyEntered = false;
+  bool _isPriceManuallyEntered = false;
 
   @override
   void initState() {
@@ -45,10 +52,25 @@ class _AddItemScreenState extends State<AddItemScreen> {
         : '');
     _quantityController = TextEditingController(text: widget.initialQuantity?.toString() ?? '');
 
+    _productController.addListener((){
+      setState(() {
+        _isProductManuallyEntered = true;
+      });
+    });
+
+    _priceController.addListener(() {
+      setState(() {
+        _isPriceManuallyEntered = true;
+      });
+    });
+
     if (widget.selectedItem != null) {
       _productController.text = widget.selectedItem!.item_name!;
       _priceController.text = widget.selectedItem!.item_price.toString();
       _quantityController.text = '1';
+
+      _isProductManuallyEntered = false;
+      _isPriceManuallyEntered = false;
     }
   }
 
@@ -257,7 +279,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     setState(() {
                       _productError = null;
                       _priceError = null;
@@ -271,6 +293,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       int quantity = int.parse(_quantityController.text);
                       double total = price * quantity;
                       double newTotalCost = widget.currentTotalCost + total;
+                      String name = _productController.text;
+                      bool itemExist = await _databaseService.checkItemExistsInFirebase(name);
 
                       if (newTotalCost > widget.budget) {
                         _showWarningDialog();
@@ -278,6 +302,27 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         widget.onAddItem(_productController.text, price, quantity);
                         Navigator.pop(context);
                       }
+
+                      if (!itemExist) {
+                        try {
+                          await _databaseService.addItem(name, price);  // Await the addItem operation
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Item has been added successfully'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        } catch (e) {
+                          // Handle any errors that occur during the insertion
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to add item: $e'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      }
+
                     } else {
                       if (_productController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(

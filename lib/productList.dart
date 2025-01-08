@@ -47,7 +47,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
-      _saveItems(); // Save the entire item list after updating
+      _saveItems();
     });
   }
 
@@ -80,18 +80,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 );
               }
-              _updateItemInList(widget.item); // Save changes
+              _updateItemInList(widget.item);
             });
           },
           budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(), // Ensure this is passed correctly
+          currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
   }
 
 
-  // Ensure the method _navigateToEditItemScreen is properly defined.
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
       context,
@@ -105,7 +104,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item); // Save changes
+              _updateItemInList(widget.item);
             });
           },
           initialName: product.name,
