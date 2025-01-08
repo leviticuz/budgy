@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class CreateTab extends StatelessWidget {
+class CreateTab extends StatefulWidget {
   final TextEditingController titleController;
   final TextEditingController budgetController;
   final TextEditingController dateController;
@@ -21,10 +23,64 @@ class CreateTab extends StatelessWidget {
   });
 
   @override
+  _CreateTabState createState() => _CreateTabState();
+}
+
+class _CreateTabState extends State<CreateTab> {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isNewList) {
+      _loadData();
+    }
+  }
+
+  // Load data from SharedPreferences
+  Future<void> _loadData() async {
+    final data = await loadDataFromSharedPreferences(widget.selectedDate);
+    if (data != null) {
+      widget.titleController.text = data['title'];
+      widget.budgetController.text = data['budget'].toString();
+      widget.dateController.text = widget.selectedDate.toLocal().toString().split(' ')[0];
+    }
+  }
+
+  // Save data to SharedPreferences
+  Future<void> saveDataToSharedPreferences(
+      String title, double budget, DateTime selectedDate) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Format the date as a string (e.g., 'yyyy-MM-dd')
+    String dateKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+
+    Map<String, dynamic> data = {
+      'title': title,
+      'budget': budget,
+    };
+
+    await prefs.setString(dateKey, jsonEncode(data));
+  }
+
+  // Load data from SharedPreferences
+  Future<Map<String, dynamic>?> loadDataFromSharedPreferences(DateTime selectedDate) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Format the date as a string (e.g., 'yyyy-MM-dd')
+    String dateKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+
+    String? jsonString = prefs.getString(dateKey);
+
+    if (jsonString != null) {
+      return jsonDecode(jsonString);
+    }
+    return null;  // If no data exists for the selected date
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isNewList) {
-      titleController.clear();
-      budgetController.clear();
+    if (widget.isNewList) {
+      widget.titleController.clear();
+      widget.budgetController.clear();
     }
 
     return Scaffold(
@@ -57,13 +113,14 @@ class CreateTab extends StatelessWidget {
                         ],
                       ),
                       child: TextField(
-                        controller: titleController,
+                        controller: widget.titleController,
                         decoration: InputDecoration(
                           labelText: 'Title',
                           border: InputBorder.none,
                         ),
                       ),
                     ),
+                    // Date Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -82,7 +139,7 @@ class CreateTab extends StatelessWidget {
                         children: [
                           Expanded(
                             child: TextField(
-                              controller: dateController,
+                              controller: widget.dateController,
                               decoration: InputDecoration(
                                 labelText: 'Pick Date',
                                 border: InputBorder.none,
@@ -100,15 +157,17 @@ class CreateTab extends StatelessWidget {
                                 firstDate: today,
                                 lastDate: DateTime(today.year + 7),
                               );
-                              if (selectedDate != null && selectedDate != this.selectedDate) {
-                                dateController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date as needed
-                                onDatePicked(selectedDate);
+                              if (selectedDate != null && selectedDate != widget.selectedDate) {
+                                widget.dateController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date as needed
+                                widget.onDatePicked(selectedDate);
+                                setState(() {});
                               }
                             },
                           ),
                         ],
                       ),
                     ),
+                    // Budget Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -127,7 +186,7 @@ class CreateTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           TextField(
-                            controller: budgetController,
+                            controller: widget.budgetController,
                             decoration: InputDecoration(
                               labelText: 'Budget (₱)',
                               border: InputBorder.none,
@@ -146,15 +205,15 @@ class CreateTab extends StatelessWidget {
                           ),
                         ],
                       ),
-
                     ),
+                    // Predefined Budget Buttons
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [100, 500, 1000, 5000, 8000, 10000].map((price) {
                         return GestureDetector(
                           onTap: () {
-                            budgetController.text = price.toString();
+                            widget.budgetController.text = price.toString();
                           },
                           child: Card(
                             elevation: 3,

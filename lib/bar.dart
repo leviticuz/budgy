@@ -1,47 +1,70 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-class barChart extends StatefulWidget {
-  final List<Map<String, double>> monthlyData;
-
-  const barChart({super.key, required this.monthlyData});
-
+class BarChartScreen extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => barChartState();
+  _BarChartScreenState createState() => _BarChartScreenState();
 }
 
-class barChartState extends State<barChart> {
+class _BarChartScreenState extends State<BarChartScreen> {
+  List<BarChartGroupData> _barGroups = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  // Load data from SharedPreferences
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<BarChartGroupData> barGroups = [];
+
+    for (int month = 1; month <= 12; month++) {
+      String monthKey = "month_$month"; // Key for the month
+      String? jsonString = prefs.getString(monthKey);
+
+      if (jsonString != null) {
+        Map<String, dynamic> monthData = jsonDecode(jsonString);
+        double budget = monthData['budget'] ?? 0.0;
+        double spending = monthData['spending'] ?? 0.0;
+
+        barGroups.add(
+          BarChartGroupData(
+            x: month - 1,
+            barRods: [
+              BarChartRodData(
+                toY: spending,
+                color: Colors.teal.shade300,
+                width: 16,
+              ),
+              BarChartRodData(
+                toY: budget,
+                color: Colors.teal.shade800,
+                width: 16,
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _barGroups = barGroups;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final List<BarChartGroupData> barGroups = List.generate(12, (index) {
-      double spending = widget.monthlyData[index]['spending'] ?? 0.0;
-      double budget = widget.monthlyData[index]['budget'] ?? 0.0;
-
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(toY: spending, color: Colors.teal.shade300, width: 16),
-          BarChartRodData(toY: budget, color: Colors.teal.shade800, width: 16),
-        ],
-      );
-    });
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      appBar: AppBar(title: Text('Monthly Budget and Spending')),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const <Widget>[
-                Icon(Icons.bar_chart, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Budget', style: TextStyle(color: Color(0xFF4DB6ACFF), fontSize: 18)),
-              ],
-            ),
-            SizedBox(height: 20),
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -49,12 +72,15 @@ class barChartState extends State<barChart> {
                   width: 5 * 16.0,
                   child: BarChart(
                     BarChartData(
-                      maxY: 150,
-                      barGroups: barGroups,
+                      maxY: 150,  // Adjust as needed
+                      barGroups: _barGroups,
                       titlesData: FlTitlesData(
                         show: true,
                         bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true, getTitlesWidget: bottomTitles),
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: bottomTitles,
+                          ),
                         ),
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(showTitles: true, interval: 25),
@@ -68,40 +94,6 @@ class barChartState extends State<barChart> {
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 8,
-                        backgroundColor: Colors.teal.shade300,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Spending',
-                        style: TextStyle(color: Color(0xFF4DB6AC), fontSize: 16),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 8,
-                        backgroundColor: Colors.teal.shade800,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Budget',
-                        style: TextStyle(color: Color(0xFF00695C), fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -112,7 +104,7 @@ class barChartState extends State<barChart> {
     const titles = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return Text(
       titles[value.toInt()],
-      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
     );
   }
 }
