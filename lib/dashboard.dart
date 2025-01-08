@@ -1,43 +1,17 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pie_chart/pie_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'productList.dart';
 
-class Dashboard extends StatefulWidget {
-  Dashboard({Key? key, required Map<String, int> frequentlyBoughtItems}) : super(key: key);
+class Dashboard extends StatelessWidget {
+  final Map<String, int> frequentlyBoughtItems;
 
-  @override
-  _DashboardState createState() => _DashboardState();
-}
-
-class _DashboardState extends State<Dashboard> {
-  Map<String, int> frequentlyBoughtItems = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFrequentlyBoughtItems();
-  }
-
-  Future<void> _loadFrequentlyBoughtItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('frequentlyBoughtItems');
-
-    if (storedData != null) {
-      final Map<String, int> loadedData = Map<String, int>.from(jsonDecode(storedData));
-      setState(() {
-        frequentlyBoughtItems = loadedData;
-      });
-    } else {
-      setState(() {
-        frequentlyBoughtItems = {};
-      });
-    }
-  }
+  Dashboard({required this.frequentlyBoughtItems});
 
   @override
   Widget build(BuildContext context) {
-    if (frequentlyBoughtItems.isEmpty) {
+    final data = frequentlyBoughtItems ?? {};
+
+    if (data.isEmpty) {
       return Scaffold(
         backgroundColor: Color(0xFFB1E8DE),
         body: Center(
@@ -83,11 +57,10 @@ class _DashboardState extends State<Dashboard> {
         ),
       );
     }
-
-    List<MapEntry<String, int>> sortedItems = frequentlyBoughtItems.entries.toList()
+    List<MapEntry<String, int>> sortedItems = data.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    List<MapEntry<String, int>> topItems = sortedItems.take(6).toList();
+    List<MapEntry<String, int>> topItems = sortedItems.take(5).toList();
 
     Map<String, double> dataMap = {};
     for (var entry in topItems) {
@@ -124,7 +97,7 @@ class _DashboardState extends State<Dashboard> {
               SizedBox(height: 20),
               PieChart(
                 dataMap: dataMap,
-                chartRadius: MediaQuery.of(context).size.width / 1.5,
+                chartRadius: MediaQuery.of(context).size.width / 3.5,
                 legendOptions: LegendOptions(
                   legendPosition: LegendPosition.bottom,
                   showLegendsInRow: true,

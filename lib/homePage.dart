@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
+
 class _HomePageState extends State<HomePage> {
   final _titleController = TextEditingController();
   final _budgetController = TextEditingController();
@@ -185,14 +186,18 @@ class _HomePageState extends State<HomePage> {
                 }
                 else{
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Budget is required')),
+                    SnackBar(content: Text('Budget is required'),
+                      duration: Duration(seconds:1),
+                    ),
+
                   );
                   return;
                 }
               }
               else{
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Title is required')),
+                  SnackBar(content: Text('Title is required'),
+                      duration: Duration(seconds:1)),
                 );
                 return;
               }
