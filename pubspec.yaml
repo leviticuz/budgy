@@ -70,7 +70,10 @@ flutter_icons:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-    - assets/UpdatedLogo.png
+    - assets/LabeledLogo.png
+    - assets/Logo8.png
+
+
 
 
   # The following line ensures that the Material Icons font is
