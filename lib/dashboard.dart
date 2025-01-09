@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bar.dart';
 
 class Dashboard extends StatefulWidget {
   Dashboard({Key? key, required Map<String, int> frequentlyBoughtItems}) : super(key: key);
@@ -159,7 +160,7 @@ class _DashboardState extends State<Dashboard> {
       body: SingleChildScrollView(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.only(top: 25),
+            padding:EdgeInsets.only(top: 25),
             child: Container(
               width: 330,
               decoration: BoxDecoration(
@@ -220,7 +221,6 @@ class _DashboardState extends State<Dashboard> {
             ),
           ),
         ),
-
       ),
     );
   }
