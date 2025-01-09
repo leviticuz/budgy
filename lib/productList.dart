@@ -81,6 +81,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 );
               }
               _updateItemInList(widget.item);
+              _updateFrequentlyBoughtItems(itemName);
             });
           },
           budget: widget.item.budget,
@@ -90,6 +91,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  Future<void> _updateFrequentlyBoughtItems(String itemName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? storedData = prefs.getString('frequentlyBoughtItems');
+
+    Map<String, int> frequentlyBoughtItems = {};
+
+    if (storedData != null) {
+      frequentlyBoughtItems = Map<String, int>.from(jsonDecode(storedData));
+    }
+    if (frequentlyBoughtItems.containsKey(itemName)) {
+      frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + 1;
+    } else {
+      frequentlyBoughtItems[itemName] = 1;
+    }
+    prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
+  }
 
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(
@@ -104,13 +121,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item);
+              _updateItemInList(widget.item); // Save changes
             });
           },
           initialName: product.name,
           initialPrice: product.price,
           initialQuantity: product.quantity,
-          budget: widget.item.budget, currentTotalCost: _calculateTotalCost(),
+          budget: widget.item.budget,
+          currentTotalCost: _calculateTotalCost(),
         ),
       ),
     );
@@ -181,7 +199,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         title: Text(
                           product.name,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             decoration: product.isChecked
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
@@ -190,7 +208,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 12)),
                             Text(
                               'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
                               style: TextStyle(color: Colors.black54),
@@ -202,14 +220,47 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           children: [
                             Text(
                               'Qty: ${product.quantity}',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 14),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.more_vert),
-                              onPressed: () {
-                                _navigateToEditItemScreen(index, product);
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert, size: 20),
+                              onSelected: (String value) {
+                                if (value == 'edit') {
+                                  _navigateToEditItemScreen(index, product);
+                                } else if (value == 'delete') {
+                                  setState(() {
+                                    widget.item.items.removeAt(index);
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("${product.name} deleted")),
+                                  );
+                                }
                               },
-                            ),
+                              itemBuilder: (BuildContext context) {
+                                return [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
+                                          child: Text('Edit'),
+                                        ),
+                                        Divider(color: Colors.black12),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
+                                      child: Text('Delete'),
+                                    ),
+                                  ),
+                                ];
+                              },
+                            )
                           ],
                         ),
                       ),
