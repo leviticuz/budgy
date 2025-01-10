@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'productList.dart';  // Ensure this import is present
-import 'item_details.dart';  // Other imports you might need
+import 'productList.dart';
+import 'item_details.dart';
 
 class HomeTab extends StatelessWidget {
   final List<Item> itemList;
@@ -16,9 +16,9 @@ class HomeTab extends StatelessWidget {
         // Centered logo
         Center(
           child: Opacity(
-            opacity: 0.3,  // Adjust the opacity to make the logo subtle
+            opacity: 0.3,
             child: Image.asset(
-              'assets/LabeledLogo.png',  // Replace with your logo path
+              'assets/LabeledLogo.png',
             ),
           ),
         ),
@@ -63,7 +63,6 @@ class HomeTab extends StatelessWidget {
                   trailing: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Reduced opacity text
                       Positioned(
                         bottom: 0,
                         right: 30,

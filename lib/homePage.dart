@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadItems(); // Load saved items on app start
+    _loadItems();
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
   }
 
@@ -47,23 +47,31 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _addItemToList(String title, double budget, DateTime date) {
+  void _addItemToList(String title, double budget, DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    final year = date.year;
+    final month = date.month.toString().padLeft(2, '0');
+    final monthKey = "$year-$month";
+
     setState(() {
       itemList.add(Item(
         title: title,
         budget: budget,
         date: date,
         items: [],
+        selectedDate: DateTime.now(),
       ));
-      _saveItems(); // Save items after adding
-      _selectedIndex = 0; // Redirect back to HomeTab
+      prefs.setDouble("${monthKey}_budget", budget); // Save budget here
+      _saveItems(); // Save the item list
+      _selectedIndex = 0;
     });
   }
+
 
   void _deleteItem(Item item) {
     setState(() {
       itemList.remove(item);
-      _saveItems(); // Save items after deleting
+      _saveItems();
     });
   }
 
@@ -82,14 +90,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Budget Validation Method
   void _validateBudget() {
     String budgetText = _budgetController.text.trim();
     double? budget = double.tryParse(budgetText);
 
-    // Check if the input is a valid number
     if (budget == null) {
-      // Not a valid number
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter a valid number for the budget'),
           duration: Duration(seconds: 1),
@@ -97,24 +102,18 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-
-    // Check if the budget is less than ₱100
     if (budget < 100) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Budget must be at least ₱100')),
       );
       return;
     }
-
-    // Check if the budget exceeds 7 digits (greater than 9,999,999)
     if (budget > 9999999) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Budget cannot exceed ₱9,999,999')),
       );
       return;
     }
-
-    // If all checks pass, proceed to add the item
     _addItemToList(_titleController.text, budget, _selectedDate);
   }
 

@@ -106,7 +106,7 @@ class LoadingScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset('assets/Logo8.png'),
-              SizedBox(height: 20),
+              SizedBox(height: 25),
               CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
               ),

@@ -82,6 +82,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               }
               _updateItemInList(widget.item);
               _updateFrequentlyBoughtItems(itemName);
+              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
             });
           },
           budget: widget.item.budget,
@@ -121,7 +122,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 quantity: newQuantity,
                 isChecked: product.isChecked,
               );
-              _updateItemInList(widget.item); // Save changes
+              _updateItemInList(widget.item);
+              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
             });
           },
           initialName: product.name,
@@ -133,12 +135,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
+  Future<void> _saveSpendingForMonth(double spending, DateTime selectedDate) async {
+    final prefs = await SharedPreferences.getInstance();
+    String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+    double currentMonthSpending = prefs.getDouble(monthKey + "_spending") ?? 0.0;
+    currentMonthSpending += spending;
+    await prefs.setDouble(monthKey + "_spending", currentMonthSpending);
+  }
 
   @override
   Widget build(BuildContext context) {
     double totalCost = _calculateTotalCost();
     double balance = widget.item.budget - totalCost;
-
     bool isOverBudget = totalCost > widget.item.budget;
 
     return Scaffold(

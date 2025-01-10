@@ -3,12 +3,14 @@ class Item {
   double budget;
   DateTime date;
   List<ItemDetail> items;
+  DateTime selectedDate;
 
   Item({
     required this.title,
     required this.budget,
     required this.date,
     required this.items,
+    required this.selectedDate,
   });
 
   Map<String, dynamic> toJson() {
@@ -28,6 +30,7 @@ class Item {
       items: (json['items'] as List<dynamic>)
           .map((item) => ItemDetail.fromJson(item))
           .toList(),
+      selectedDate: DateTime.now(),
     );
   }
 }

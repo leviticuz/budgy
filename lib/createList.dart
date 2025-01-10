@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateTab extends StatefulWidget {
@@ -27,6 +27,9 @@ class CreateTab extends StatefulWidget {
 }
 
 class _CreateTabState extends State<CreateTab> {
+  double totalBudget = 0.0;
+  double totalSpending = 0.0;
+  List<Map<String, double>> monthlyData = [];
   @override
   void initState() {
     super.initState();
@@ -35,47 +38,32 @@ class _CreateTabState extends State<CreateTab> {
     }
   }
 
-  // Load data from SharedPreferences
-  Future<void> _loadData() async {
-    final data = await loadDataFromSharedPreferences(widget.selectedDate);
-    if (data != null) {
-      widget.titleController.text = data['title'];
-      widget.budgetController.text = data['budget'].toString();
-      widget.dateController.text = widget.selectedDate.toLocal().toString().split(' ')[0];
-    }
-  }
-
-  // Save data to SharedPreferences
-  Future<void> saveDataToSharedPreferences(
-      String title, double budget, DateTime selectedDate) async {
+  void _loadData() async {
     final prefs = await SharedPreferences.getInstance();
+    final year = widget.selectedDate.year;
+    final month = widget.selectedDate.month.toString().padLeft(2, '0');
+    final monthKey = "$year-$month";
 
-    // Format the date as a string (e.g., 'yyyy-MM-dd')
-    String dateKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+    // Load stored budget and spending for the selected month
+    final budget = prefs.getDouble("${monthKey}_budget") ?? 0.0;
+    final spending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
 
-    Map<String, dynamic> data = {
-      'title': title,
-      'budget': budget,
-    };
-
-    await prefs.setString(dateKey, jsonEncode(data));
+    setState(() {
+      totalBudget = budget;
+      totalSpending = spending;
+      monthlyData = [
+        {"totalBudget": totalBudget, "totalSpending": totalSpending}
+      ];
+    });
   }
-
-  // Load data from SharedPreferences
-  Future<Map<String, dynamic>?> loadDataFromSharedPreferences(DateTime selectedDate) async {
+  Future<void> saveDataToSharedPreferences(String title, double budget, DateTime selectedDate) async {
     final prefs = await SharedPreferences.getInstance();
+    String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+    await prefs.setDouble("${monthKey}_budget", budget);
 
-    // Format the date as a string (e.g., 'yyyy-MM-dd')
-    String dateKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-
-    String? jsonString = prefs.getString(dateKey);
-
-    if (jsonString != null) {
-      return jsonDecode(jsonString);
-    }
-    return null;  // If no data exists for the selected date
+    double currentMonthSpending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
+    await prefs.setDouble("${monthKey}_spending", currentMonthSpending);
   }
-
   @override
   Widget build(BuildContext context) {
     if (widget.isNewList) {
@@ -97,7 +85,6 @@ class _CreateTabState extends State<CreateTab> {
                 ),
                 child: Column(
                   children: [
-                    // Title Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -158,7 +145,7 @@ class _CreateTabState extends State<CreateTab> {
                                 lastDate: DateTime(today.year + 7),
                               );
                               if (selectedDate != null && selectedDate != widget.selectedDate) {
-                                widget.dateController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date as needed
+                                widget.dateController.text = "${selectedDate.toLocal()}".split(' ')[0];
                                 widget.onDatePicked(selectedDate);
                                 setState(() {});
                               }
@@ -167,7 +154,6 @@ class _CreateTabState extends State<CreateTab> {
                         ],
                       ),
                     ),
-                    // Budget Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
