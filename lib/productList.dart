@@ -95,19 +95,32 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> _updateFrequentlyBoughtItems(String itemName) async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('frequentlyBoughtItems');
+    final String? monthlyData = prefs.getString('monthlyPurchases');
 
     Map<String, int> frequentlyBoughtItems = {};
+    Map<String, Map<String, int>> monthlyPurchases = {};
 
     if (storedData != null) {
       frequentlyBoughtItems = Map<String, int>.from(jsonDecode(storedData));
     }
-    if (frequentlyBoughtItems.containsKey(itemName)) {
-      frequentlyBoughtItems[itemName] = frequentlyBoughtItems[itemName]! + 1;
-    } else {
-      frequentlyBoughtItems[itemName] = 1;
+    if (monthlyData != null) {
+      monthlyPurchases = Map<String, Map<String, int>>.from(
+        jsonDecode(monthlyData).map(
+              (key, value) => MapEntry(key, Map<String, int>.from(value)),
+        ),
+      );
     }
+
+    frequentlyBoughtItems[itemName] = (frequentlyBoughtItems[itemName] ?? 0) + 1;
+
+    String monthKey = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}";
+    monthlyPurchases[monthKey] = monthlyPurchases[monthKey] ?? {};
+    monthlyPurchases[monthKey]![itemName] = (monthlyPurchases[monthKey]![itemName] ?? 0) + 1;
+
     prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
+    prefs.setString('monthlyPurchases', jsonEncode(monthlyPurchases));
   }
+
 
   void _navigateToEditItemScreen(int index, ItemDetail product) {
     Navigator.push(

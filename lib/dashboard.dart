@@ -11,129 +11,60 @@ class Dashboard extends StatefulWidget {
   _DashboardState createState() => _DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMixin {
   Map<String, int> frequentlyBoughtItems = {};
+  Map<String, int> monthlyFrequentlyBoughtItems = {};
   DateTime selectedDate = DateTime.now();
   int touchedIndex = -1;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _loadFrequentlyBoughtItems();
+    _loadMonthlyFrequentlyBoughtItems();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('frequentlyBoughtItems');
-
     if (storedData != null) {
       final Map<String, int> loadedData = Map<String, int>.from(jsonDecode(storedData));
       setState(() {
         frequentlyBoughtItems = loadedData;
       });
-    } else {
-      setState(() {
-        frequentlyBoughtItems = {};
-      });
     }
   }
 
-  void _updateItemQuantity(String itemName, int newQuantity) async {
-    setState(() {
-      frequentlyBoughtItems[itemName] = newQuantity;
-    });
-
+  Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
+    final String? storedData = prefs.getString('monthlyPurchases');
+    if (storedData != null) {
+      final Map<String, dynamic> monthlyData = jsonDecode(storedData);
+      String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+      if (monthlyData.containsKey(monthKey)) {
+        Map<String, int> monthlyItems = Map<String, int>.from(monthlyData[monthKey]);
+        setState(() {
+          monthlyFrequentlyBoughtItems = monthlyItems;
+        });
+      }
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    int totalFrequency = frequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
-    if (frequentlyBoughtItems.isEmpty) {
-      return Scaffold(
-        backgroundColor: Color(0xFFB1E8DE),
-        body: Center(
-          child: Container(
-            width: 330,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: 20),
-                Text(
-                  'Frequently Bought Items',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text(
-                    'No data available',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    List<MapEntry<String, int>> sortedItems = frequentlyBoughtItems.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    List<MapEntry<String, int>> topItems = sortedItems.take(6).toList();
-
-    Map<String, double> dataMap = {};
-    for (var entry in topItems) {
-      dataMap[entry.key] = entry.value.toDouble();
-    }
-
-    List<PieChartSectionData> sections = dataMap.entries.map((entry) {
-      double percentage = (entry.value / totalFrequency) * 100;
-
-      final isTouched = dataMap.keys.toList().indexOf(entry.key) == touchedIndex;
-      final fontSize = isTouched ? 16.0 : 12.0;
-      final radius = isTouched ? 110.0 : 100.0;
-      const shadows = [Shadow(color: Colors.black, blurRadius: 2)];
-
-      return PieChartSectionData(
-        color: Colors.accents[dataMap.keys.toList().indexOf(entry.key) % Colors.accents.length],
-        value: entry.value,
-        title: '${percentage.toStringAsFixed(2)}%',
-        radius: radius,
-        titleStyle: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
-          color: const Color(0xffffffff),
-          shadows: shadows,
-        ),
-      );
-    }).toList();
-
-    List<Widget> legendItems = dataMap.entries.map((entry) {
+  List<Widget> LegendItems(Map<String, int> dataMap) {
+    return dataMap.entries.map((entry) {
       String itemName = entry.key.split(' ').take(3).join(' ') + '...';
 
       return Container(
-        margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+        width: MediaQuery.of(context).size.width / 3 - 24, // Ensures 3 items per row
+        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0), // Reduced vertical margin
         child: Row(
           children: [
             Container(
@@ -145,20 +76,71 @@ class _DashboardState extends State<Dashboard> {
               ),
             ),
             SizedBox(width: 5),
-            Text(
-              itemName,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.black,
+            Expanded(
+              child: Text(
+                itemName,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.black,
+                ),
+                overflow: TextOverflow.ellipsis, // Handles long names gracefully
               ),
             ),
           ],
         ),
       );
     }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    int totalFrequency = frequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
+    int totalMonthlyFrequency = monthlyFrequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
+
+    List<PieChartSectionData> allTimeSections = frequentlyBoughtItems.entries.map((entry) {
+      double percentage = (entry.value / totalFrequency) * 100;
+      final isTouched = frequentlyBoughtItems.keys.toList().indexOf(entry.key) == touchedIndex;
+      final fontSize = isTouched ? 16.0 : 12.0;
+      final radius = isTouched ? 110.0 : 100.0;
+      return PieChartSectionData(
+        color: Colors.accents[frequentlyBoughtItems.keys.toList().indexOf(entry.key) % Colors.accents.length],
+        value: entry.value.toDouble(),
+        title: '${percentage.toStringAsFixed(2)}%',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xffffffff),
+        ),
+      );
+    }).toList();
+
+    List<PieChartSectionData> monthlySections = monthlyFrequentlyBoughtItems.entries.map((entry) {
+      double percentage = (entry.value / totalMonthlyFrequency) * 100;
+      final isTouched = monthlyFrequentlyBoughtItems.keys.toList().indexOf(entry.key) == touchedIndex;
+      final fontSize = isTouched ? 16.0 : 12.0;
+      final radius = isTouched ? 110.0 : 100.0;
+      return PieChartSectionData(
+        color: Colors.accents[monthlyFrequentlyBoughtItems.keys.toList().indexOf(entry.key) % Colors.accents.length],
+        value: entry.value.toDouble(),
+        title: '${percentage.toStringAsFixed(2)}%',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xffffffff),
+        ),
+      );
+    }).toList();
 
     return Scaffold(
       backgroundColor: Color(0xFFB1E8DE),
+      appBar: AppBar(
+        backgroundColor: Color(0xFF5BB7A6),
+        automaticallyImplyLeading: false,
+        title: Text("Dashboard", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         child: Center(
           child: Padding(
@@ -168,6 +150,8 @@ class _DashboardState extends State<Dashboard> {
               children: [
                 Container(
                   width: 330,
+                  height: double.infinity,
+                  constraints: BoxConstraints(minHeight: 300, maxHeight: 500),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -185,47 +169,112 @@ class _DashboardState extends State<Dashboard> {
                       SizedBox(height: 20),
                       Text(
                         'Frequently Bought',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 20),
-                      AspectRatio(
-                        aspectRatio: 1.3,
-                        child: PieChart(
-                          PieChartData(
-                            pieTouchData: PieTouchData(
-                              touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                setState(() {
-                                  if (!event.isInterestedForInteractions ||
-                                      pieTouchResponse == null ||
-                                      pieTouchResponse.touchedSection == null) {
-                                    touchedIndex = -1;
-                                    return;
-                                  }
-                                  touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                });
-                              },
+                      SizedBox(height: 10),
+                      TabBar(
+                        controller: _tabController,
+                        labelColor: Colors.black,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: Colors.black,
+                        tabs: [
+                          Tab(text: 'General'),
+                          Tab(text: 'This month'),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 350,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            frequentlyBoughtItems.isEmpty
+                                ? Center(child: Text('No data available'))
+                                : Column(
+                              children: [
+                                Expanded(  // Use Expanded to auto-adjust the Pie Chart height
+                                  child: AspectRatio(
+                                    aspectRatio: 1.3,
+                                    child: PieChart(
+                                      PieChartData(
+                                        pieTouchData: PieTouchData(
+                                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                            setState(() {
+                                              if (!event.isInterestedForInteractions ||
+                                                  pieTouchResponse == null ||
+                                                  pieTouchResponse.touchedSection == null) {
+                                                touchedIndex = -1;
+                                                return;
+                                              }
+                                              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                            });
+                                          },
+                                        ),
+                                        borderData: FlBorderData(show: false),
+                                        sectionsSpace: 0,
+                                        centerSpaceRadius: 0,
+                                        sections: allTimeSections,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                                  child: Wrap(
+                                    spacing: 8.0,
+                                    runSpacing: 4.0,
+                                    children: LegendItems(frequentlyBoughtItems),
+                                  ),
+                                ),
+                              ],
                             ),
-                            borderData: FlBorderData(show: false),
-                            sectionsSpace: 0,
-                            centerSpaceRadius: 0,
-                            sections: sections,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Wrap(
-                          children: legendItems,
+                            monthlyFrequentlyBoughtItems.isEmpty
+                                ? Center(child: Text('No data available'))
+                                : Column(
+                              children: [
+                                Expanded(
+                                  child: AspectRatio(
+                                    aspectRatio: 1.3,
+                                    child: PieChart(
+                                      PieChartData(
+                                        pieTouchData: PieTouchData(
+                                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                            setState(() {
+                                              if (!event.isInterestedForInteractions ||
+                                                  pieTouchResponse == null ||
+                                                  pieTouchResponse.touchedSection == null) {
+                                                touchedIndex = -1;
+                                                return;
+                                              }
+                                              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                            });
+                                          },
+                                        ),
+                                        borderData: FlBorderData(show: false),
+                                        sectionsSpace: 0,
+                                        centerSpaceRadius: 0,
+                                        sections: monthlySections,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                  child: Wrap(
+                                    spacing: 8.0,  // Horizontal gap between items
+                                    runSpacing: 4.0,  // Vertical gap between rows
+                                    children: LegendItems(monthlyFrequentlyBoughtItems),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 50), // Added space between PieChart and BarChart
-                barChart(selectedDate: selectedDate), // Bar chart outside the container
+                SizedBox(height: 20),
+                barChart(selectedDate: selectedDate),
               ],
             ),
           ),

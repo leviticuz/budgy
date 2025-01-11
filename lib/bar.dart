@@ -193,7 +193,7 @@ class _barChartState extends State<barChart> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Container(
-                          width: monthlyData.length * 60.0, // Dynamic width based on bars
+                          width: monthlyData.length * 60.0,
                           child: BarChart(
                             BarChartData(
                               maxY: maxYValue,
@@ -214,11 +214,12 @@ class _barChartState extends State<barChart> {
                                     showTitles: true,
                                       getTitlesWidget: (value, _) {
                                         final monthNames = [
-                                          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                          "January", "February", "March", "April", "May", "June",
+                                          "July", "August", "September", "October", "November", "December"
                                         ];
                                         if (value >= 0 && value < monthNames.length) {
                                           final monthName = monthNames[value.toInt()];
+                                          final shortMonthName = monthName.substring(0, 3);
                                           final data = monthlyData[value.toInt()];
                                           return GestureDetector(
                                             onTap: () {
@@ -230,8 +231,8 @@ class _barChartState extends State<barChart> {
                                               );
                                             },
                                             child: Text(
-                                              monthName,
-                                              style: const TextStyle(
+                                              shortMonthName,
+                                              style: TextStyle(
                                                 fontSize: 12,
                                                 color: Color(0xFF317165),
                                                 decoration: TextDecoration.none,
