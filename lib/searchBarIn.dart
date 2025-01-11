@@ -12,20 +12,21 @@ class Searchbar extends StatefulWidget {
 }
 
 class _SearchbarState extends State<Searchbar> {
-  static List<Item> item_list = [];
-  List<Item> display_list = List.from(item_list);
+  static List<Item> firebaseItems = [];
+  static List<Item> sqliteItems = [];
+  List<Item> display_list = [];
   bool isLoading = true;
-  String loadingMessage = "Loading data...";
   bool networkError = false;
 
+  @override
   void initState() {
     super.initState();
-    item_list.clear(); // Clear the item list before fetching new data
     display_list.clear();
     fetchDataFromFirebase();
     fetchDataFromSQLite();
   }
 
+  // Fetch data from Firebase
   Future<void> fetchDataFromFirebase() async {
     final DatabaseReference database = FirebaseDatabase.instance.ref('products');
 
@@ -33,7 +34,8 @@ class _SearchbarState extends State<Searchbar> {
     Future.delayed(Duration(seconds: 30), () {
       if (isLoading) {
         setState(() {
-          loadingMessage = "Network Unstable. Please try again.";
+          isLoading = false;
+          networkError = true;
         });
       }
     });
@@ -44,15 +46,15 @@ class _SearchbarState extends State<Searchbar> {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         List<Item> tempList = [];
         data.forEach((key, category) {
-          final categoryName = category['name'] ?? ''; // Extract category name
-          final items = Map<String, dynamic>.from(category['items'] );
+          final categoryName = category['name'] ?? '';
+          final items = Map<String, dynamic>.from(category['items']);
           items.forEach((_, itemData) {
             tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
           });
         });
         setState(() {
-          item_list = tempList;
-          display_list = List.from(item_list);
+          firebaseItems = tempList;
+          display_list = List.from(sqliteItems)..addAll(firebaseItems); // SQLite items always on top
           isLoading = false;
         });
       } else {
@@ -69,38 +71,90 @@ class _SearchbarState extends State<Searchbar> {
     }
   }
 
+  // Fetch data from SQLite
   Future<void> fetchDataFromSQLite() async {
     try {
-      // Fetch items from SQLite database
       final itemsFromSQLite = await DatabaseService.instance.getAllItems();
-
-      // No need to map because `getAllItems()` already returns a list of `Item` objects
       setState(() {
-        item_list.addAll(itemsFromSQLite);
-        display_list = List.from(item_list);
+        sqliteItems = itemsFromSQLite;
+        display_list = List.from(sqliteItems)..addAll(firebaseItems); // Ensure SQLite items come first
       });
     } catch (e) {
       print("Error fetching data from SQLite: $e");
     }
   }
 
+  // Refresh the data (pull-to-refresh)
   Future<void> _refreshData() async {
     setState(() {
       isLoading = true;
-      item_list.clear(); // Clear the item list before fetching new data
-      display_list.clear(); // Clear the display list to avoid duplication
+      sqliteItems.clear();
+      firebaseItems.clear();
+      display_list.clear();
     });
     await fetchDataFromFirebase();
     await fetchDataFromSQLite();
   }
 
+  // Update the display list based on search query
   void updateList(String value) {
     setState(() {
-      display_list = item_list.where((element) =>
+      display_list = sqliteItems.where((element) =>
       element.category_name!.toLowerCase().contains(value.toLowerCase()) ||
           element.item_name!.toLowerCase().contains(value.toLowerCase())
-      ).toList();
+      ).toList()
+        ..addAll(firebaseItems.where((element) =>
+        element.category_name!.toLowerCase().contains(value.toLowerCase()) ||
+            element.item_name!.toLowerCase().contains(value.toLowerCase())
+        ));
     });
+  }
+
+  // Function to delete SQLite item with confirmation dialog
+  void deleteSQLiteItem(int index) async {
+    var itemToDelete = sqliteItems[index];
+
+    // Show confirmation dialog
+    bool? confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Confirm Deletion"),
+        content: Text("Are you sure you want to delete ${itemToDelete.item_name}?"),
+        actions: <Widget>[
+          TextButton(
+            child: Text("Cancel"),
+            onPressed: () {
+              Navigator.of(context).pop(false); // User cancels the action
+            },
+          ),
+          TextButton(
+            child: Text("Delete"),
+            onPressed: () {
+              Navigator.of(context).pop(true); // User confirms the deletion
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != null && confirmed) {
+      try {
+        // Call delete function in DatabaseService
+        await DatabaseService.instance.deleteItem(itemToDelete);  // Implement delete function in DatabaseService
+        setState(() {
+          sqliteItems.removeAt(index); // Remove item from local list
+          display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update displayed list
+        });
+
+        // Show confirmation message
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("${itemToDelete.item_name} deleted successfully."),
+          duration: Duration(seconds: 2),
+        ));
+      } catch (e) {
+        print("Error deleting item: $e");
+      }
+    }
   }
 
   @override
@@ -188,30 +242,21 @@ class _SearchbarState extends State<Searchbar> {
                                   '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                trailing: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      "₱${item.item_price.toString()}",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade900,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      item_cost == null || item_cost == "n/a"
-                                          ? "Market Price: n/a"
-                                          : "Market Price: ₱$item_cost",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
+                                trailing: sqliteItems.contains(item)
+                                    ? PopupMenuButton<String>(
+                                  onSelected: (String value) {
+                                    if (value == 'delete') {
+                                      deleteSQLiteItem(index);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Text('Delete'),
                                     ),
                                   ],
-                                ),
+                                )
+                                    : null,
                               ),
                             ),
                           ),

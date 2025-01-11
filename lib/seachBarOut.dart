@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:Budgy/user_db.dart'; // Update with the correct path
 import 'dart:async';
+import 'homePage.dart';
 
 class Seachbarout extends StatefulWidget {
   const Seachbarout({super.key});
@@ -12,42 +13,32 @@ class Seachbarout extends StatefulWidget {
 }
 
 class _SeachbaroutState extends State<Seachbarout> {
-  static List<Item> item_list = [];
-  List<Item> display_list = List.from(item_list);
+  static List<Item> firebaseItems = [];  // For Firebase items
+  static List<Item> sqliteItems = [];    // For SQLite items
+  List<Item> display_list = []; // To show the combined list (if needed)
   bool isLoading = true;
-  String loadingMessage = "Loading data...";
   bool networkError = false;
 
   String category = ""; // User input category
 
+  @override
   void initState() {
     super.initState();
-    item_list.clear(); // Clear the item list before fetching new data
     display_list.clear();
-    fetchDataFromFirebase();
     fetchDataFromSQLite();
+    fetchDataFromFirebase();
   }
 
-  // Fetch Firebase data
+  // Fetch Firebase data (Unchanged)
   Future<void> fetchDataFromFirebase() async {
     final DatabaseReference database = FirebaseDatabase.instance.ref('products');
-
-    // Start a timeout timer
-    Future.delayed(Duration(seconds: 30), () {
-      if (isLoading) {
-        setState(() {
-          loadingMessage = "Network Unstable. Please try again.";
-        });
-      }
-    });
-
     try {
       final snapshot = await database.get();
       if (snapshot.exists) {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         List<Item> tempList = [];
         data.forEach((key, categoryData) {
-          final categoryName = categoryData['name'] ?? ''; // Extract category name
+          final categoryName = categoryData['name'] ?? '';
           if (category.isEmpty || categoryName.toLowerCase().contains(category.toLowerCase())) {
             final items = Map<String, dynamic>.from(categoryData['items']);
             items.forEach((_, itemData) {
@@ -56,12 +47,8 @@ class _SeachbaroutState extends State<Seachbarout> {
           }
         });
         setState(() {
-          item_list.addAll(tempList);
-          display_list = List.from(item_list);
-          isLoading = false;
-        });
-      } else {
-        setState(() {
+          firebaseItems = tempList;
+          display_list = List.from(sqliteItems)..addAll(firebaseItems);
           isLoading = false;
         });
       }
@@ -74,42 +61,88 @@ class _SeachbaroutState extends State<Seachbarout> {
     }
   }
 
-  // Fetch SQLite data
+  // Fetch SQLite data (Separate from Firebase)
   Future<void> fetchDataFromSQLite() async {
     try {
-      // Fetch items from SQLite database
       final itemsFromSQLite = await DatabaseService.instance.getAllItems();
-
-      // No need to map because getAllItems() already returns a list of Item objects
       setState(() {
-        item_list.addAll(itemsFromSQLite);
-        display_list = List.from(item_list);
+        sqliteItems = itemsFromSQLite;
+        // Ensure SQLite items always come first in the display_list
+        display_list = List.from(sqliteItems)..addAll(firebaseItems);
       });
     } catch (e) {
       print("Error fetching data from SQLite: $e");
     }
   }
 
-  // Refresh data on pull-to-refresh
-  Future<void> _refreshData() async {
-    setState(() {
-      isLoading = true;
-      item_list.clear(); // Clear the item list before fetching new data
-      display_list.clear(); // Clear the display list to avoid duplication
-    });
-    await fetchDataFromFirebase();
-    await fetchDataFromSQLite();
-  }
-
-  // Update list based on user input
+  // Update list based on user input (You can choose to update SQLite or Firebase separately)
   void updateCategory(String value) {
     setState(() {
       category = value;
-      display_list = item_list.where((element) =>
-      (element.category_name != null && element.category_name!.toLowerCase().contains(value.toLowerCase())) ||
-          element.item_name!.toLowerCase().contains(value.toLowerCase())
-      ).toList();
+      // Filtering for display
+      display_list = firebaseItems.where((element) =>
+      element.category_name != null &&
+          element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
+        ..addAll(sqliteItems.where((element) =>
+        element.category_name != null &&
+            element.category_name!.toLowerCase().contains(value.toLowerCase())));
     });
+  }
+
+  // Separate function to handle SQLite-specific actions (Update, Delete, etc.)
+  void updateSQLiteItem(int index, String newName, double newPrice) async {
+    try {
+      await DatabaseService.instance.addItem(newName, newPrice); // Modify as needed
+      fetchDataFromSQLite();  // Refresh the SQLite list
+    } catch (e) {
+      print("Error updating SQLite item: $e");
+    }
+  }
+
+  void deleteSQLiteItem(int index) async {
+    var itemToDelete = sqliteItems[index];
+
+    // Show confirmation dialog
+    bool? confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Confirm Deletion"),
+        content: Text("Are you sure you want to delete ${itemToDelete.item_name}?"),
+        actions: <Widget>[
+          TextButton(
+            child: Text("Cancel"),
+            onPressed: () {
+              Navigator.of(context).pop(false); // User cancels the action
+            },
+          ),
+          TextButton(
+            child: Text("Delete"),
+            onPressed: () {
+              Navigator.of(context).pop(true); // User confirms the deletion
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != null && confirmed) {
+      try {
+        // Call your delete function here (in DatabaseService)
+        await DatabaseService.instance.deleteItem(itemToDelete);  // Implement delete function in DatabaseService
+        setState(() {
+          sqliteItems.removeAt(index); // Remove item from local list
+          display_list = List.from(sqliteItems)..addAll(firebaseItems);
+        });
+
+        // Show confirmation message
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("${itemToDelete.item_name} deleted successfully."),
+          duration: Duration(seconds: 2),
+        ));
+      } catch (e) {
+        print("Error deleting item: $e");
+      }
+    }
   }
 
   @override
@@ -123,16 +156,11 @@ class _SeachbaroutState extends State<Seachbarout> {
           children: [
             AppBar(
               backgroundColor: Color(0xFF5BB7A6),
-              automaticallyImplyLeading: false,
-              // Disable back arrow
+              automaticallyImplyLeading: true,
               title: Text(
                 "Enter category to search",
-                style: TextStyle(
-                  color: Colors.white,
-                ),
+                style: TextStyle(color: Colors.white),
               ),
-
-
             ),
             TextField(
               onChanged: (value) => updateCategory(value),
@@ -147,32 +175,45 @@ class _SeachbaroutState extends State<Seachbarout> {
                 prefixIcon: Icon(Icons.search),
               ),
             ),
-            // Check if the app is loading, if network error occurs, or if no items are found
             isLoading
                 ? Center(child: CircularProgressIndicator())
                 : networkError
-                ? Center(child: Text("Network Error. Please check your connection.", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)))
+                ? Center(child: Text(
+                "Network Error. Please check your connection.",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                )))
                 : display_list.isEmpty
-                ? Center(child: Text("No Results Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
+                ? Center(
+                child: Text("No Results Found",
+                    style: TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold)))
                 : Expanded(
               child: RefreshIndicator(
-                onRefresh: _refreshData,  // Pull-to-refresh callback
+                onRefresh: () async {
+                  await fetchDataFromFirebase();
+                  await fetchDataFromSQLite();
+                },
                 child: ListView.builder(
                   itemCount: display_list.length,
                   itemBuilder: (context, index) {
                     var item = display_list[index];
                     var item_cost = item.item_cost;
 
-                    // Check if the category name should be displayed
-                    bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
+                    bool isFirstItemInCategory = index == 0 ||
+                        display_list[index - 1].category_name !=
+                            item.category_name;
 
                     return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        // Display category name as a non-clickable header
                         if (isFirstItemInCategory)
                           Container(
-                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 16),
                             child: Text(
                               item.category_name!,
                               style: TextStyle(
@@ -182,39 +223,32 @@ class _SeachbaroutState extends State<Seachbarout> {
                               ),
                             ),
                           ),
-                        // Display item details
                         GestureDetector(
-                          onTap: () => (display_list[index]), // Action can be added here
+                          onTap: () {
+                            // Perform SQLite-specific operations here if needed
+                          },
                           child: Card(
                             child: ListTile(
                               title: Text(
-                                '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                '${item.item_name!} ${item.item_unit}',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
-                              trailing: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    "₱${item.item_price.toString()}",
-                                    style: TextStyle(
-                                      color: Colors.teal.shade900,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    item_cost == null || item_cost == "n/a"
-                                        ? "Market Price: n/a"
-                                        : "Market Price: ₱$item_cost",
-                                    style: TextStyle(
-                                      color: Colors.teal.shade700,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                              trailing: sqliteItems.contains(item)
+                                  ? PopupMenuButton<String>(
+                                onSelected: (String value) {
+                                  if (value == 'delete') {
+                                    deleteSQLiteItem(index);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Text('Delete'),
                                   ),
                                 ],
-                              ),
+                              )
+                                  : null,
                             ),
                           ),
                         ),
@@ -230,3 +264,4 @@ class _SeachbaroutState extends State<Seachbarout> {
     );
   }
 }
+

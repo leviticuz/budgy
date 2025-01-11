@@ -42,7 +42,6 @@ class DatabaseService {
       if (itemExistsInSQLite) {
         return true;  // Item found in SQLite
       }
-      // If not found in SQLite, check Firebase
       final snapshot = await FirebaseDatabase.instance.ref().child('products/').get();
       if (snapshot.exists) {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
@@ -85,4 +84,17 @@ class DatabaseService {
       return [];
     }
   }
+  Future<void> deleteItem(Item item) async {
+    final db = await database;
+    try {
+      await db.delete(
+        _tblName,
+        where: '$_nameColumn = ?',
+        whereArgs: [item.item_name], // You can use item_name or any unique identifier
+      );
+    } catch (e) {
+      print("Error deleting item: $e");
+    }
+  }
+
 }
