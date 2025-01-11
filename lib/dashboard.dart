@@ -18,9 +18,17 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
   int touchedIndex = -1;
   late TabController _tabController;
 
+  List<String> months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  String? selectedMonth;
+
   @override
   void initState() {
     super.initState();
+    selectedMonth = months[selectedDate.month - 1];
     _loadFrequentlyBoughtItems();
     _loadMonthlyFrequentlyBoughtItems();
     _tabController = TabController(length: 2, vsync: this);
@@ -46,9 +54,12 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
   Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('monthlyPurchases');
+
     if (storedData != null) {
       final Map<String, dynamic> monthlyData = jsonDecode(storedData);
-      String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+
+      String monthKey = "${selectedDate.year}-${(months.indexOf(selectedMonth!) + 1).toString().padLeft(2, '0')}";
+
       if (monthlyData.containsKey(monthKey)) {
         Map<String, int> monthlyItems = Map<String, int>.from(monthlyData[monthKey]);
         setState(() {
@@ -57,6 +68,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
       }
     }
   }
+
 
   List<Widget> LegendItems(Map<String, int> dataMap) {
     return dataMap.entries.map((entry) {
@@ -191,7 +203,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                 ? Center(child: Text('No data available'))
                                 : Column(
                               children: [
-                                Expanded(  // Use Expanded to auto-adjust the Pie Chart height
+                                Expanded(
                                   child: AspectRatio(
                                     aspectRatio: 1.3,
                                     child: PieChart(
@@ -231,6 +243,21 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                 ? Center(child: Text('No data available'))
                                 : Column(
                               children: [
+                                DropdownButton<String>(
+                                  value: selectedMonth,
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      selectedMonth = newValue;
+                                      _loadMonthlyFrequentlyBoughtItems();
+                                    });
+                                  },
+                                  items: months.map((month) {
+                                    return DropdownMenuItem<String>(
+                                      value: month,
+                                      child: Text(month),
+                                    );
+                                  }).toList(),
+                                ),
                                 Expanded(
                                   child: AspectRatio(
                                     aspectRatio: 1.3,
