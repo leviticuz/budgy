@@ -211,7 +211,7 @@ class _barChartState extends State<barChart> {
                               titlesData: FlTitlesData(
                                 bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
-                                    showTitles: true,
+                                      showTitles: true,
                                       getTitlesWidget: (value, _) {
                                         final monthNames = [
                                           "January", "February", "March", "April", "May", "June",
@@ -238,7 +238,7 @@ class _barChartState extends State<barChart> {
                                                 decoration: TextDecoration.none,
                                               ),
                                             ),
-                                           );
+                                          );
                                         }
                                         return const SizedBox();
                                       }
