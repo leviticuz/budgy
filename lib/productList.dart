@@ -27,28 +27,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final itemListJson = prefs.getString('itemList');
     if (itemListJson != null) {
       final List<dynamic> decoded = jsonDecode(itemListJson);
-      setState(() {
-        _itemList = decoded.map((json) => Item.fromJson(json)).toList();
-      });
+      _itemList = decoded.map((json) => Item.fromJson(json)).toList();
     } else {
       _itemList = [];
     }
+    setState(() {});
   }
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = jsonEncode(_itemList.map((item) => item.toJson()).toList());
-    prefs.setString('itemList', itemListJson);
+    await prefs.setString('itemList', itemListJson);
   }
 
   void _updateItemInList(Item updatedItem) {
-    setState(() {
-      final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
-      if (index != -1) {
-        _itemList[index] = updatedItem;
-      }
+    final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
+    if (index != -1) {
+      _itemList[index] = updatedItem;
       _saveItems();
-    });
+    }
   }
 
   double _calculateTotalCost() {
@@ -61,29 +58,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
       MaterialPageRoute(
         builder: (context) => AddItemScreen(
           onAddItem: (String itemName, double itemPrice, int quantity) {
-            setState(() {
-              bool itemExists = false;
-              for (var existingItem in widget.item.items) {
-                if (existingItem.name == itemName) {
-                  existingItem.quantity += quantity;
-                  itemExists = true;
-                  break;
-                }
+            bool itemExists = false;
+            for (var existingItem in widget.item.items) {
+              if (existingItem.name == itemName) {
+                existingItem.quantity += quantity;
+                itemExists = true;
+                break;
               }
-              if (!itemExists) {
-                widget.item.items.add(
-                  ItemDetail(
-                    name: itemName,
-                    quantity: quantity,
-                    isChecked: false,
-                    price: itemPrice,
-                  ),
-                );
-              }
-              _updateItemInList(widget.item);
-              _updateFrequentlyBoughtItems(itemName);
-              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
-            });
+            }
+            if (!itemExists) {
+              widget.item.items.add(ItemDetail(name: itemName, quantity: quantity, isChecked: false, price: itemPrice));
+            }
+            _updateItemInList(widget.item);
+            _updateFrequentlyBoughtItems(itemName);
+            _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
+            setState(() {});
           },
           budget: widget.item.budget,
           currentTotalCost: _calculateTotalCost(),
@@ -94,66 +83,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Future<void> _updateFrequentlyBoughtItems(String itemName) async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('frequentlyBoughtItems');
-    final String? monthlyData = prefs.getString('monthlyPurchases');
-
-    Map<String, int> frequentlyBoughtItems = {};
-    Map<String, Map<String, int>> monthlyPurchases = {};
-
-    if (storedData != null) {
-      frequentlyBoughtItems = Map<String, int>.from(jsonDecode(storedData));
-    }
-    if (monthlyData != null) {
-      monthlyPurchases = Map<String, Map<String, int>>.from(
-        jsonDecode(monthlyData).map(
-              (key, value) => MapEntry(key, Map<String, int>.from(value)),
-        ),
-      );
-    }
-
+    final frequentlyBoughtItems = Map<String, int>.from(jsonDecode(prefs.getString('frequentlyBoughtItems') ?? '{}'));
     frequentlyBoughtItems[itemName] = (frequentlyBoughtItems[itemName] ?? 0) + 1;
-
-    String monthKey = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}";
-    monthlyPurchases[monthKey] = monthlyPurchases[monthKey] ?? {};
-    monthlyPurchases[monthKey]![itemName] = (monthlyPurchases[monthKey]![itemName] ?? 0) + 1;
-
-    prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
-    prefs.setString('monthlyPurchases', jsonEncode(monthlyPurchases));
+    await prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
   }
 
-
-  void _navigateToEditItemScreen(int index, ItemDetail product) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddItemScreen(
-          onAddItem: (String newName, double newPrice, int newQuantity) {
-            setState(() {
-              widget.item.items[index] = ItemDetail(
-                name: newName,
-                price: newPrice,
-                quantity: newQuantity,
-                isChecked: product.isChecked,
-              );
-              _updateItemInList(widget.item);
-              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
-            });
-          },
-          initialName: product.name,
-          initialPrice: product.price,
-          initialQuantity: product.quantity,
-          budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(),
-        ),
-      ),
-    );
-  }
   Future<void> _saveSpendingForMonth(double spending, DateTime selectedDate) async {
     final prefs = await SharedPreferences.getInstance();
-    String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
-    double currentMonthSpending = prefs.getDouble(monthKey + "_spending") ?? 0.0;
-    currentMonthSpending += spending;
-    await prefs.setDouble(monthKey + "_spending", currentMonthSpending);
+    final monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+    final currentMonthSpending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
+    await prefs.setDouble("${monthKey}_spending", currentMonthSpending + spending);
   }
 
   @override
@@ -165,19 +104,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFFB1E8DE),
-        title: Text('${widget.item.title}'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline),
-            onPressed: _navigateToAddItemScreen,
-          ),
-        ],
+        title: Text(widget.item.title),
+        actions: [IconButton(icon: Icon(Icons.add_circle_outline), onPressed: _navigateToAddItemScreen)],
       ),
       body: Container(
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
-            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
+            Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),
@@ -188,19 +122,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     key: Key(product.name),
                     direction: DismissDirection.endToStart,
                     onDismissed: (direction) {
-                      setState(() {
-                        widget.item.items.removeAt(index);
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("${product.name} deleted")),
-                      );
+                      widget.item.items.removeAt(index);
+                      _updateItemInList(widget.item);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${product.name} deleted")));
+                      setState(() {});
                     },
                     background: Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(16)),
                       alignment: Alignment.centerRight,
                       padding: EdgeInsets.all(16.0),
                       child: Icon(Icons.delete, color: Colors.white),
@@ -221,9 +150,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           product.name,
                           style: TextStyle(
                             fontSize: 16,
-                            decoration: product.isChecked
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
+                            decoration: product.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
                           ),
                         ),
                         subtitle: Column(
@@ -236,54 +163,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                           ],
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Qty: ${product.quantity}',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            PopupMenuButton<String>(
-                              icon: Icon(Icons.more_vert, size: 20),
-                              onSelected: (String value) {
-                                if (value == 'edit') {
-                                  _navigateToEditItemScreen(index, product);
-                                } else if (value == 'delete') {
-                                  setState(() {
-                                    widget.item.items.removeAt(index);
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("${product.name} deleted")),
-                                  );
-                                }
-                              },
-                              itemBuilder: (BuildContext context) {
-                                return [
-                                  PopupMenuItem<String>(
-                                    value: 'edit',
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
-                                          child: Text('Edit'),
-                                        ),
-                                        Divider(color: Colors.black12),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'delete',
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
-                                      child: Text('Delete'),
-                                    ),
-                                  ),
-                                ];
-                              },
-                            )
-                          ],
-                        ),
+                        trailing: Text('Qty: ${product.quantity}', style: TextStyle(fontSize: 14)),
                       ),
                     ),
                   );
@@ -302,11 +182,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
                       'Balance: ₱${balance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isOverBudget ? Colors.white : Colors.black,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isOverBudget ? Colors.white : Colors.black),
                     ),
                   ),
                 ],

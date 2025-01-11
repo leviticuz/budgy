@@ -19,9 +19,22 @@ void main() async {
   );
 
   final prefs = await SharedPreferences.getInstance();
+  logSharedPreferencesContents(prefs);
   final seenGetStarted = prefs.getBool('seenGetStarted') ?? false;
 
   runApp(MyApp(seenGetStarted: seenGetStarted));
+}
+
+void logSharedPreferencesContents(SharedPreferences prefs) {
+  final allPrefs = prefs.getKeys();
+  if (allPrefs.isEmpty) {
+    print("SharedPreferences is empty.");
+  } else {
+    print("SharedPreferences contents:");
+    for (var key in allPrefs) {
+      print("Key: $key, Value: ${prefs.get(key)}");
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {

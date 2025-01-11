@@ -1,9 +1,11 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Budgy/user_db.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dummyItems.dart';
 import 'searchBarIn.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class AddItemScreen extends StatefulWidget {
   final Function(String, double, int) onAddItem;
@@ -52,7 +54,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         : '');
     _quantityController = TextEditingController(text: widget.initialQuantity?.toString() ?? '');
 
-    _productController.addListener((){
+    _productController.addListener(() {
       setState(() {
         _isProductManuallyEntered = true;
       });
@@ -74,6 +76,32 @@ class _AddItemScreenState extends State<AddItemScreen> {
     }
   }
 
+  // Save item to SharedPreferences
+  Future<void> _saveItemToPreferences(String name, double price, int quantity) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? storedData = prefs.getString('savedItems');
+
+    List<Map<String, dynamic>> itemList = [];
+    if (storedData != null) {
+      itemList = List<Map<String, dynamic>>.from(jsonDecode(storedData));
+    }
+
+    bool itemExists = false;
+    for (var item in itemList) {
+      if (item['name'] == name) {
+        item['quantity'] += quantity;
+        itemExists = true;
+        break;
+      }
+    }
+
+    if (!itemExists) {
+      itemList.add({'name': name, 'price': price, 'quantity': quantity});
+    }
+
+    await prefs.setString('savedItems', jsonEncode(itemList));
+  }
+
   void _showWarningDialog() {
     showDialog(
       context: context,
@@ -87,6 +115,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 double price = double.parse(_priceController.text.replaceAll(',', ''));
                 int quantity = int.parse(_quantityController.text);
                 widget.onAddItem(_productController.text, price, quantity);
+                _saveItemToPreferences(_productController.text, price, quantity);
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
@@ -295,33 +324,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       double total = price * quantity;
                       double newTotalCost = widget.currentTotalCost + total;
                       String name = _productController.text;
-                      bool itemExist = await _databaseService.checkItemExistsInFirebase(name);
 
                       if (newTotalCost > widget.budget) {
                         _showWarningDialog();
                       } else {
                         widget.onAddItem(_productController.text, price, quantity);
+                        _saveItemToPreferences(name, price, quantity);
                         Navigator.pop(context);
-                      }
-
-                      if (!itemExist) {
-                        try {
-                          await _databaseService.addItem(name, price);  // Await the addItem operation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Item has been added successfully'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        } catch (e) {
-                          // Handle any errors that occur during the insertion
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to add item: $e'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        }
                       }
 
                     } else {

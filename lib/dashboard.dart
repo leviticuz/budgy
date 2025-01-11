@@ -40,6 +40,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  // Load all-time frequently bought items
   Future<void> _loadFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('frequentlyBoughtItems');
@@ -51,24 +52,47 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
     }
   }
 
+  // Load monthly frequently bought items, filter by selected month
   Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('monthlyPurchases');
+    final String? storedData = prefs.getString('itemList'); // Fetching data using the correct key
 
     if (storedData != null) {
-      final Map<String, dynamic> monthlyData = jsonDecode(storedData);
+      // Decode the stored data into a list of items
+      final List<dynamic> itemListData = jsonDecode(storedData);
 
-      String monthKey = "${selectedDate.year}-${(months.indexOf(selectedMonth!) + 1).toString().padLeft(2, '0')}";
+      List<Map<String, dynamic>> filteredItems = [];
+      for (var item in itemListData) {
+        // Check if the item's date matches the selected month
+        String itemDate = item['date']; // Example: "2025-01-11T19:16:47.200318"
+        DateTime itemDateTime = DateTime.parse(itemDate);
 
-      if (monthlyData.containsKey(monthKey)) {
-        Map<String, int> monthlyItems = Map<String, int>.from(monthlyData[monthKey]);
-        setState(() {
-          monthlyFrequentlyBoughtItems = monthlyItems;
-        });
+        // Filter by the selected year and month
+        if (itemDateTime.year == selectedDate.year &&
+            itemDateTime.month == (months.indexOf(selectedMonth!) + 1)) {
+          filteredItems.add(item);
+        }
       }
+
+      // Now process the filteredItems to count the frequencies
+      Map<String, int> updatedMonthlyItems = {};
+
+      for (var item in filteredItems) {
+        List<dynamic> items = item['items']; // List of item details
+        for (var product in items) {
+          String itemName = product['name']; // Item name (e.g., 'Liberty Condensada')
+          int quantity = product['quantity']; // Quantity purchased
+
+          // Add quantity to the map, updating it based on the existing or new item
+          updatedMonthlyItems.update(itemName, (value) => value + quantity, ifAbsent: () => quantity);
+        }
+      }
+
+      setState(() {
+        monthlyFrequentlyBoughtItems = updatedMonthlyItems; // Update the state with the new data
+      });
     }
   }
-
 
   List<Widget> LegendItems(Map<String, int> dataMap) {
     return dataMap.entries.map((entry) {
@@ -191,7 +215,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                         indicatorColor: Colors.black,
                         tabs: [
                           Tab(text: 'General'),
-                          Tab(text: 'This month'),
+                          Tab(text: 'Monthly'),
                         ],
                       ),
                       SizedBox(
@@ -239,16 +263,15 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                 ),
                               ],
                             ),
-                            monthlyFrequentlyBoughtItems.isEmpty
-                                ? Center(child: Text('No data available'))
-                                : Column(
+                            Column(
                               children: [
+                                // Dropdown remains visible even if no data
                                 DropdownButton<String>(
                                   value: selectedMonth,
                                   onChanged: (newValue) {
                                     setState(() {
                                       selectedMonth = newValue;
-                                      _loadMonthlyFrequentlyBoughtItems();
+                                      _loadMonthlyFrequentlyBoughtItems(); // Reload data based on selected month
                                     });
                                   },
                                   items: months.map((month) {
@@ -258,7 +281,13 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                     );
                                   }).toList(),
                                 ),
-                                Expanded(
+                                // Show a message when there is no data for the selected month
+                                monthlyFrequentlyBoughtItems.isEmpty
+                                    ? Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text('No data available for this month', style: TextStyle(fontSize: 16, color: Colors.red)),
+                                )
+                                    : Expanded(
                                   child: AspectRatio(
                                     aspectRatio: 1.3,
                                     child: PieChart(
@@ -310,3 +339,4 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
     );
   }
 }
+

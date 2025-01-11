@@ -205,65 +205,116 @@ class _SearchbarState extends State<Searchbar> {
                   ? Center(child: Text("No Results Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
                   : Expanded(
                 child: RefreshIndicator(
-                  onRefresh: _refreshData,  // Pull-to-refresh callback
-                  child: ListView.builder(
-                    itemCount: display_list.length,
-                    itemBuilder: (context, index) {
-                      var item = display_list[index];
-                      var item_cost = item.item_cost;
+                    onRefresh: _refreshData,  // Pull-to-refresh callback
+                    child: ListView.builder(
+                      itemCount: display_list.length,
+                      itemBuilder: (context, index) {
+                        var item = display_list[index];
+                        var item_cost = item.item_cost;
 
-                      // Check if the category name should be displayed
-                      bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
+                        // Check if the category name should be displayed
+                        bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Display category name as a non-clickable header
-                          if (isFirstItemInCategory)
-                            Container(
-                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                              child: Text(
-                                item.category_name!,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal.shade900,
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Display category name as a non-clickable header
+                            if (isFirstItemInCategory)
+                              Container(
+                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                child: Text(
+                                  item.category_name!,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal.shade900,
+                                  ),
+                                ),
+                              ),
+                            // Display item details
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context, item);  // Return the selected item
+                              },
+                              child: Card(
+                                child: ListTile(
+                                  title: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      // Display price for SQLite items under the item name
+                                      if (sqliteItems.contains(item) && item.item_price != null)
+                                        Text(
+                                          "₱${item.item_price.toString()}",
+                                          style: TextStyle(
+                                            color: Colors.teal.shade900,
+                                            fontSize: 14, // Smaller font size for price
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  trailing: sqliteItems.contains(item)
+                                      ? PopupMenuButton<String>(
+                                    onSelected: (String value) {
+                                      if (value == 'delete') {
+                                        deleteSQLiteItem(index);
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem<String>(
+                                        value: 'delete',
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
+                                  )
+                                      : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      // Firebase items display price
+                                      if (item.item_price != null)
+                                        Text(
+                                          "₱${item.item_price.toString()}",
+                                          style: TextStyle(
+                                            color: Colors.teal.shade900,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      SizedBox(height: 4),
+                                      // Display market price for Firebase items if available
+                                      if (item_cost != null && item_cost != "n/a")
+                                        Text(
+                                          "Market Price: ₱$item_cost",
+                                          style: TextStyle(
+                                            color: Colors.teal.shade700,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      // Display "n/a" if market price is not available
+                                      if (item_cost == null || item_cost == "n/a")
+                                        Text(
+                                          "Market Price: n/a",
+                                          style: TextStyle(
+                                            color: Colors.teal.shade700,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          // Display item details and make the item clickable
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context, item);  // Return the selected item
-                            },
-                            child: Card(
-                              child: ListTile(
-                                title: Text(
-                                  '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                trailing: sqliteItems.contains(item)
-                                    ? PopupMenuButton<String>(
-                                  onSelected: (String value) {
-                                    if (value == 'delete') {
-                                      deleteSQLiteItem(index);
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem<String>(
-                                      value: 'delete',
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                          ],
+                        );
+                      },
+                    )
+
                 ),
               ),
             ],
