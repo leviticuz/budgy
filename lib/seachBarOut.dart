@@ -1,4 +1,3 @@
-
 import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -81,7 +80,7 @@ class _SeachbaroutState extends State<Seachbarout> {
       // Fetch items from SQLite database
       final itemsFromSQLite = await DatabaseService.instance.getAllItems();
 
-      // No need to map because `getAllItems()` already returns a list of `Item` objects
+      // No need to map because getAllItems() already returns a list of Item objects
       setState(() {
         item_list.addAll(itemsFromSQLite);
         display_list = List.from(item_list);
@@ -118,111 +117,114 @@ class _SeachbaroutState extends State<Seachbarout> {
     return Scaffold(
       body: Container(
         color: Color(0xFFB1E8DE),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppBar(
-                backgroundColor: Color(0xFF5BB7A6),
-                title: Text("Enter category to search", style: TextStyle(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppBar(
+              backgroundColor: Color(0xFF5BB7A6),
+              automaticallyImplyLeading: false,
+              // Disable back arrow
+              title: Text(
+                "Enter category to search",
+                style: TextStyle(
                   color: Colors.white,
-                )),
-              ),
-
-              SizedBox(height: 20),
-              TextField(
-                onChanged: (value) => updateCategory(value),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(9.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  hintText: "Enter category (e.g. Drinks)",
-                  prefixIcon: Icon(Icons.search),
                 ),
               ),
-              SizedBox(height: 20),
-              // Check if the app is loading, if network error occurs, or if no items are found
-              isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : networkError
-                  ? Center(child: Text("Network Error. Please check your connection.", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)))
-                  : display_list.isEmpty
-                  ? Center(child: Text("No Results Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
-                  : Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refreshData,  // Pull-to-refresh callback
-                  child: ListView.builder(
-                    itemCount: display_list.length,
-                    itemBuilder: (context, index) {
-                      var item = display_list[index];
-                      var item_cost = item.item_cost;
 
-                      // Check if the category name should be displayed
-                      bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
+            ),
+            TextField(
+              onChanged: (value) => updateCategory(value),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9.0),
+                  borderSide: BorderSide.none,
+                ),
+                hintText: "Enter category (e.g. Drinks)",
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            // Check if the app is loading, if network error occurs, or if no items are found
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : networkError
+                ? Center(child: Text("Network Error. Please check your connection.", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)))
+                : display_list.isEmpty
+                ? Center(child: Text("No Results Found", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)))
+                : Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshData,  // Pull-to-refresh callback
+                child: ListView.builder(
+                  itemCount: display_list.length,
+                  itemBuilder: (context, index) {
+                    var item = display_list[index];
+                    var item_cost = item.item_cost;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Display category name as a non-clickable header
-                          if (isFirstItemInCategory)
-                            Container(
-                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                              child: Text(
-                                item.category_name!,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal.shade900,
-                                ),
-                              ),
-                            ),
-                          // Display item details
-                          GestureDetector(
-                            onTap: () => (display_list[index]), // Action can be added here
-                            child: Card(
-                              child: ListTile(
-                                title: Text(
-                                  '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                trailing: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      "₱${item.item_price.toString()}",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade900,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      item_cost == null || item_cost == "n/a"
-                                          ? "Market Price: n/a"
-                                          : "Market Price: ₱$item_cost",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                    // Check if the category name should be displayed
+                    bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Display category name as a non-clickable header
+                        if (isFirstItemInCategory)
+                          Container(
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            child: Text(
+                              item.category_name!,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal.shade900,
                               ),
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  ),
+                        // Display item details
+                        GestureDetector(
+                          onTap: () => (display_list[index]), // Action can be added here
+                          child: Card(
+                            child: ListTile(
+                              title: Text(
+                                '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              trailing: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "₱${item.item_price.toString()}",
+                                    style: TextStyle(
+                                      color: Colors.teal.shade900,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    item_cost == null || item_cost == "n/a"
+                                        ? "Market Price: n/a"
+                                        : "Market Price: ₱$item_cost",
+                                    style: TextStyle(
+                                      color: Colors.teal.shade700,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }
