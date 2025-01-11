@@ -177,7 +177,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
-            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),
@@ -245,6 +244,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                             PopupMenuButton<String>(
                               icon: Icon(Icons.more_vert, size: 20),
+                              offset: Offset(0, 30), // Moves the popup down by 30 pixels
                               onSelected: (String value) {
                                 if (value == 'edit') {
                                   _navigateToEditItemScreen(index, product);
@@ -261,22 +261,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 return [
                                   PopupMenuItem<String>(
                                     value: 'edit',
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
-                                          child: Text('Edit'),
-                                        ),
-                                        Divider(color: Colors.black12),
-                                      ],
+                                    height: 30,
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                                      child: Text(
+                                        'Edit',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
                                     ),
                                   ),
                                   PopupMenuItem<String>(
                                     value: 'delete',
+                                    height: 30,
                                     child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 4.0,horizontal: 8.0),
-                                      child: Text('Delete'),
+                                      padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                                      child: Text(
+                                        'Delete',
+                                        style: TextStyle(fontSize: 12,color: Color(0xFFb8181e)),
+                                      ),
                                     ),
                                   ),
                                 ];

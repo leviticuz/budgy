@@ -76,6 +76,8 @@ class _barChartState extends State<barChart> {
   }
 
   void _showBottomSheet(BuildContext context, String monthName, double budget, double spending) {
+    final isOverspent = spending > budget;
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -83,7 +85,10 @@ class _barChartState extends State<barChart> {
       ),
       builder: (context) {
         return Container(
-          color: Color(0xFFc2ece4),
+          decoration: BoxDecoration(
+            color: Color(0xFFc2ece4), // Background color
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30.0)), // Rounded corners
+          ),
           width: 365,
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -105,7 +110,7 @@ class _barChartState extends State<barChart> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Budget:",
+                    "Budget",
                     style: TextStyle(fontSize: 16, color: Color(0xFF0e7860)),
                   ),
                   Text(
@@ -119,12 +124,12 @@ class _barChartState extends State<barChart> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Spent:",
+                    "Spent",
                     style: TextStyle(fontSize: 16, color: Color(0xFF0e7860)),
                   ),
                   Text(
                     "₱${spending.toStringAsFixed(2)}",
-                    style: TextStyle(fontSize: 16, color: Color(0xFF0e7860)),
+                    style: TextStyle(fontSize: 16,color: Color(0xFF0e7860)),
                   ),
                 ],
               ),
@@ -133,12 +138,16 @@ class _barChartState extends State<barChart> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Saved:",
-                    style: TextStyle(fontSize: 16, color: Color(0xFF0e7860)),
+                    "Saved",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Color(0xFF0e7860)),
                   ),
                   Text(
                     "₱${(budget - spending).toStringAsFixed(2)}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF004b39)),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isOverspent ? Color(0xFFa60f15) : Color(0xFF004b39),
+                    ),
                   ),
                 ],
               ),
@@ -188,7 +197,6 @@ class _barChartState extends State<barChart> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Scrollable Bar Chart
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -221,28 +229,41 @@ class _barChartState extends State<barChart> {
                                           final monthName = monthNames[value.toInt()];
                                           final shortMonthName = monthName.substring(0, 3);
                                           final data = monthlyData[value.toInt()];
-                                          return GestureDetector(
-                                            onTap: () {
-                                              _showBottomSheet(
-                                                context,
-                                                monthName,
-                                                data["totalBudget"] ?? 0.0,
-                                                data["totalSpending"] ?? 0.0,
-                                              );
-                                            },
-                                            child: Text(
+                                          final budget = data["totalBudget"] ?? 0.0;
+                                          final spending = data["totalSpending"] ?? 0.0;
+
+                                          if (budget > 0 || spending > 0) {
+                                            return GestureDetector(
+                                              onTap: () {
+                                                _showBottomSheet(
+                                                  context,
+                                                  monthName,
+                                                  budget,
+                                                  spending,
+                                                );
+                                              },
+                                              child: Text(
+                                                shortMonthName,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF317165),
+                                                  decoration: TextDecoration.none,
+                                                ),
+                                              ),
+                                            );
+                                          } else {
+                                            return Text(
                                               shortMonthName,
                                               style: TextStyle(
                                                 fontSize: 12,
-                                                color: Color(0xFF317165),
+                                                color: Colors.grey,
                                                 decoration: TextDecoration.none,
                                               ),
-                                            ),
-                                          );
+                                            );
+                                          }
                                         }
-                                        return const SizedBox();
+                                        return SizedBox();
                                       }
-
                                   ),
                                 ),
                                 leftTitles: AxisTitles(
@@ -266,14 +287,13 @@ class _barChartState extends State<barChart> {
                     ),
                     // Fixed Numbers on the Right
                     Container(
-                      width: 50, // Fixed width for the right-side numbers
+                      width: 50,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: List.generate(
-                          5, // Adjust based on maxYValue
+                          5,
                               (index) {
-                            // Calculate value to display on the right
-                            double value = maxYValue * (1 - (index / 4)); // Inverted scaling (from bottom to top)
+                            double value = maxYValue * (1 - (index / 4));
                             return Text(
                               value.toInt().toString(),
                               style: TextStyle(
@@ -285,13 +305,10 @@ class _barChartState extends State<barChart> {
                         ),
                       ),
                     ),
-
                   ],
                 ),
               ),
-
               SizedBox(height: 20),
-              // Legend with circular indicators
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

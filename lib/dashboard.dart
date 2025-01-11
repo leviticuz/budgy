@@ -53,30 +53,49 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
 
   Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('monthlyPurchases');
+    final String? storedData = prefs.getString('itemList');
 
     if (storedData != null) {
-      final Map<String, dynamic> monthlyData = jsonDecode(storedData);
+      final List<dynamic> itemListData = jsonDecode(storedData);
 
-      String monthKey = "${selectedDate.year}-${(months.indexOf(selectedMonth!) + 1).toString().padLeft(2, '0')}";
+      List<Map<String, dynamic>> filteredItems = [];
+      for (var item in itemListData) {
 
-      if (monthlyData.containsKey(monthKey)) {
-        Map<String, int> monthlyItems = Map<String, int>.from(monthlyData[monthKey]);
-        setState(() {
-          monthlyFrequentlyBoughtItems = monthlyItems;
-        });
+        String itemDate = item['date'];
+        DateTime itemDateTime = DateTime.parse(itemDate);
+
+        if (itemDateTime.year == selectedDate.year &&
+            itemDateTime.month == (months.indexOf(selectedMonth!) + 1)) {
+          filteredItems.add(item);
+        }
       }
+
+
+      Map<String, int> updatedMonthlyItems = {};
+
+      for (var item in filteredItems) {
+        List<dynamic> items = item['items'];
+        for (var product in items) {
+          String itemName = product['name'];
+          int quantity = product['quantity'];
+
+          updatedMonthlyItems.update(itemName, (value) => value + quantity, ifAbsent: () => quantity);
+        }
+      }
+
+      setState(() {
+        monthlyFrequentlyBoughtItems = updatedMonthlyItems;
+      });
     }
   }
-
 
   List<Widget> LegendItems(Map<String, int> dataMap) {
     return dataMap.entries.map((entry) {
       String itemName = entry.key.split(' ').take(3).join(' ') + '...';
 
       return Container(
-        width: MediaQuery.of(context).size.width / 3 - 24, // Ensures 3 items per row
-        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0), // Reduced vertical margin
+        width: MediaQuery.of(context).size.width / 3 - 24,
+        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
         child: Row(
           children: [
             Container(
@@ -95,7 +114,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                   fontSize: 11,
                   color: Colors.black,
                 ),
-                overflow: TextOverflow.ellipsis, // Handles long names gracefully
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -191,7 +210,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                         indicatorColor: Colors.black,
                         tabs: [
                           Tab(text: 'General'),
-                          Tab(text: 'This month'),
+                          Tab(text: 'Monthly'),
                         ],
                       ),
                       SizedBox(
@@ -239,16 +258,15 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                 ),
                               ],
                             ),
-                            monthlyFrequentlyBoughtItems.isEmpty
-                                ? Center(child: Text('No data available'))
-                                : Column(
+                            Column(
                               children: [
+                                // Dropdown remains visible even if no data
                                 DropdownButton<String>(
                                   value: selectedMonth,
                                   onChanged: (newValue) {
                                     setState(() {
                                       selectedMonth = newValue;
-                                      _loadMonthlyFrequentlyBoughtItems();
+                                      _loadMonthlyFrequentlyBoughtItems(); // Reload data based on selected month
                                     });
                                   },
                                   items: months.map((month) {
@@ -258,7 +276,12 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                     );
                                   }).toList(),
                                 ),
-                                Expanded(
+                                monthlyFrequentlyBoughtItems.isEmpty
+                                    ? Padding(
+                                  padding: const EdgeInsets.all(45.0),
+                                  child: Text('No data available for this month', style: TextStyle(fontSize: 16, color: Color(0xFFb8181e))),
+                                )
+                                    : Expanded(
                                   child: AspectRatio(
                                     aspectRatio: 1.3,
                                     child: PieChart(
