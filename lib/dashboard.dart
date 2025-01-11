@@ -134,44 +134,28 @@ class _DashboardState extends State<Dashboard> {
 
       return Container(
         margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-        padding: EdgeInsets.all(6.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(color: Colors.grey.shade300),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4.0,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 14,
-              height: 14,
+              width: 10,
+              height: 10,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.accents[dataMap.keys.toList().indexOf(entry.key) % Colors.accents.length],
               ),
             ),
-            SizedBox(width: 8),
+            SizedBox(width: 5),
             Text(
               itemName,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 11,
+                color: Colors.black,
               ),
             ),
           ],
         ),
       );
     }).toList();
-
 
     return Scaffold(
       backgroundColor: Color(0xFFB1E8DE),
