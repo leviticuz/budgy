@@ -263,6 +263,7 @@ class _SeachbaroutState extends State<Seachbarout> {
                             child: Card(
                               child: ListTile(
                                 title: Column(
+
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(

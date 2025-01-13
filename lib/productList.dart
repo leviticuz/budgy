@@ -178,7 +178,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 children: [
                   Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
                   Container(
-                    color: isOverBudget ? Colors.red : Colors.teal.shade100,
+                    decoration: BoxDecoration(
+                      color: isOverBudget ? Colors.red : Colors.teal.shade100,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
                       'Balance: ₱${balance.toStringAsFixed(2)}',
@@ -188,6 +191,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ],
               ),
             ),
+
           ],
         ),
       ),

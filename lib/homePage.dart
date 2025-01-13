@@ -65,11 +65,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _deleteItem(Item item) {
-    setState(() {
-      itemList.remove(item);
-      _saveItems();
-    });
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Deletion"),
+          content: Text("Are you sure you want to permanently delete this list?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // User cancels the action
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  itemList.remove(item); // Delete the item
+                  _saveItems(); // Save updated list
+                });
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
   }
+
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
@@ -90,12 +114,12 @@ class _HomePageState extends State<HomePage> {
     String budgetText = _budgetController.text.trim();
     double? budget = double.tryParse(budgetText);
 
-    if (budget == null || budget < 100 || budget > 9999999) {
+    if (budget == null || budget < 100 || budget > 10000) {
       String message = budget == null
           ? 'Please enter a valid number for the budget'
           : budget < 100
           ? 'Budget must be at least ₱100'
-          : 'Budget cannot exceed ₱9,999,999';
+          : 'Budget cannot exceed ₱10,000';
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), duration: Duration(seconds: 1)),
