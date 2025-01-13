@@ -13,9 +13,10 @@ class Seachbarout extends StatefulWidget {
 }
 
 class _SeachbaroutState extends State<Seachbarout> {
-  static List<Item> firebaseItems = [];  // For Firebase items
-  static List<Item> sqliteItems = [];    // For SQLite items
-  List<Item> display_list = []; // To show the combined list (if needed)
+  static List<Item> firebaseItems = []; // For Firebase items
+  static List<Item> sqliteItems = [];   // For SQLite items
+  List<Item> display_list = [];         // To show the combined list (if needed)
+  String loadingMessage = "Loading data...";
   bool isLoading = true;
   bool networkError = false;
 
@@ -32,6 +33,15 @@ class _SeachbaroutState extends State<Seachbarout> {
   // Fetch Firebase data (Unchanged)
   Future<void> fetchDataFromFirebase() async {
     final DatabaseReference database = FirebaseDatabase.instance.ref('products');
+
+    Future.delayed(Duration(seconds: 30), () {
+      if (isLoading) {
+        setState(() {
+          loadingMessage = "Network Unstable. Please try again.";
+        });
+      }
+    });
+
     try {
       final snapshot = await database.get();
       if (snapshot.exists) {
@@ -49,6 +59,10 @@ class _SeachbaroutState extends State<Seachbarout> {
         setState(() {
           firebaseItems = tempList;
           display_list = List.from(sqliteItems)..addAll(firebaseItems);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
           isLoading = false;
         });
       }
@@ -75,28 +89,47 @@ class _SeachbaroutState extends State<Seachbarout> {
     }
   }
 
-  // Update list based on user input (You can choose to update SQLite or Firebase separately)
+  // Keyword-based category mapping
+  Map<String, String> keywordToCategory = {
+    "kape": "coffee products",
+    "tubig": "water",
+    "sabon": "soap",
+    "asin": "salt",
+    "suka": "vinegar",
+    "tinapay": "bread",
+    "kandila": "candles",
+    "gatas": "milk",
+    "toyo": "soy sauce",
+  };
+
+  // Update list based on user input
   void updateCategory(String value) {
     setState(() {
       category = value;
-      // Filtering for display
-      display_list = firebaseItems.where((element) =>
-      element.category_name != null &&
-          element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
-        ..addAll(sqliteItems.where((element) =>
-        element.category_name != null &&
-            element.category_name!.toLowerCase().contains(value.toLowerCase())));
-    });
-  }
 
-  // Separate function to handle SQLite-specific actions (Update, Delete, etc.)
-  void updateSQLiteItem(int index, String newName, double newPrice) async {
-    try {
-      await DatabaseService.instance.addItem(newName, newPrice); // Modify as needed
-      fetchDataFromSQLite();  // Refresh the SQLite list
-    } catch (e) {
-      print("Error updating SQLite item: $e");
-    }
+      // Check for matching keywords
+      String? matchedCategory = keywordToCategory.entries
+          .firstWhere((entry) => entry.key.toLowerCase() == value.toLowerCase(), orElse: () => const MapEntry("", ""))
+          .value;
+
+      // If a keyword matches, filter by its associated category
+      if (matchedCategory.isNotEmpty) {
+        display_list = firebaseItems.where((element) =>
+        element.category_name != null &&
+            element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())).toList()
+          ..addAll(sqliteItems.where((element) =>
+          element.category_name != null &&
+              element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())));
+      } else {
+        // Default category filtering
+        display_list = firebaseItems.where((element) =>
+        element.category_name != null &&
+            element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
+          ..addAll(sqliteItems.where((element) =>
+          element.category_name != null &&
+              element.category_name!.toLowerCase().contains(value.toLowerCase())));
+      }
+    });
   }
 
   void deleteSQLiteItem(int index) async {
@@ -127,11 +160,11 @@ class _SeachbaroutState extends State<Seachbarout> {
 
     if (confirmed != null && confirmed) {
       try {
-        // Call your delete function here (in DatabaseService)
+        // Call delete function in DatabaseService
         await DatabaseService.instance.deleteItem(itemToDelete);  // Implement delete function in DatabaseService
         setState(() {
           sqliteItems.removeAt(index); // Remove item from local list
-          display_list = List.from(sqliteItems)..addAll(firebaseItems);
+          display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update displayed list
         });
 
         // Show confirmation message
@@ -156,7 +189,7 @@ class _SeachbaroutState extends State<Seachbarout> {
           children: [
             AppBar(
               backgroundColor: Color(0xFF5BB7A6),
-              automaticallyImplyLeading: true,
+              automaticallyImplyLeading: false,
               title: Text(
                 "Enter category to search",
                 style: TextStyle(color: Colors.white),
@@ -171,20 +204,23 @@ class _SeachbaroutState extends State<Seachbarout> {
                   borderRadius: BorderRadius.circular(9.0),
                   borderSide: BorderSide.none,
                 ),
-                hintText: "Enter category (e.g. Drinks)",
+                hintText: "Enter category (e.g. Drinks or keywords)",
                 prefixIcon: Icon(Icons.search),
               ),
             ),
             isLoading
                 ? Center(child: CircularProgressIndicator())
                 : networkError
-                ? Center(child: Text(
+                ? Center(
+              child: Text(
                 "Network Error. Please check your connection.",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
-                )))
+                ),
+              ),
+            )
                 : display_list.isEmpty
                 ? Center(
                 child: Text("No Results Found",
@@ -208,7 +244,6 @@ class _SeachbaroutState extends State<Seachbarout> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Display category name as a non-clickable header
                           if (isFirstItemInCategory)
                             Container(
                               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -221,7 +256,6 @@ class _SeachbaroutState extends State<Seachbarout> {
                                 ),
                               ),
                             ),
-                          // Display item details
                           GestureDetector(
                             onTap: () {
                               // Add your action for the item tap (if needed)
@@ -235,7 +269,6 @@ class _SeachbaroutState extends State<Seachbarout> {
                                       '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    // Display price only for SQLite items
                                     if (sqliteItems.contains(item) && item.item_price != null)
                                       Text(
                                         "₱${item.item_price.toString()}",
@@ -292,8 +325,7 @@ class _SeachbaroutState extends State<Seachbarout> {
                         ],
                       );
                     },
-                  )
-              ),
+                  )),
             ),
           ],
         ),
@@ -301,4 +333,3 @@ class _SeachbaroutState extends State<Seachbarout> {
     );
   }
 }
-

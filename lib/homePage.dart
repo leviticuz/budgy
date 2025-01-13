@@ -147,12 +147,6 @@ class _HomePageState extends State<HomePage> {
         ),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        leading: _selectedIndex == 1
-            ? IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => setState(() => _selectedIndex = 0),
-        )
-            : null,
         actions: _selectedIndex == 1
             ? [
           TextButton(
