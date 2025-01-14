@@ -86,16 +86,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
       itemList = List<Map<String, dynamic>>.from(jsonDecode(storedData));
     }
 
-    bool itemExists = false;
+    bool ifItem = false;
     for (var item in itemList) {
       if (item['name'] == name) {
         item['quantity'] += quantity;
-        itemExists = true;
+        ifItem = true;
         break;
       }
     }
 
-    if (!itemExists) {
+    if (!ifItem) {
       itemList.add({'name': name, 'price': price, 'quantity': quantity});
     }
 
@@ -325,12 +325,33 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       double newTotalCost = widget.currentTotalCost + total;
                       String name = _productController.text;
 
+                      bool itemExists = await _databaseService.checkItemExistsInFirebase(name, price);
+
                       if (newTotalCost > widget.budget) {
                         _showWarningDialog();
                       } else {
                         widget.onAddItem(_productController.text, price, quantity);
                         _saveItemToPreferences(name, price, quantity);
                         Navigator.pop(context);
+                      }
+
+                      if (!itemExists) {
+                        try {
+                          await _databaseService.addItem(name, price);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Item has been added successfully'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to add item: $e'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        }
                       }
 
                     } else {

@@ -34,28 +34,48 @@ class DatabaseService {
     );
     return database;
   }
-  Future<bool> checkItemExistsInFirebase(String itemName) async {
+  Future<bool> checkItemExistsInFirebase(String itemName, double itemPrice) async {
     try {
       // First, check if the item exists in SQLite
-      final itemsFromSQLite = await DatabaseService.instance.getAllItems();
-      bool itemExistsInSQLite = itemsFromSQLite.any((item) => item.item_name!.toLowerCase() == itemName.toLowerCase());
-      if (itemExistsInSQLite) {
-        return true;  // Item found in SQLite
+      final db = await database;
+      final List<Map<String, dynamic>> items = await db.query(
+        _tblName,
+        where: '$_nameColumn = ?',
+        whereArgs: [itemName],
+      );
+
+      if (items.isNotEmpty) {
+        final existingItem = items.first;
+        double existingPrice = existingItem[_priceColumn];
+
+        // If the price is different, update it
+        if (existingPrice != itemPrice) {
+          await db.update(
+            _tblName,
+            {_priceColumn: itemPrice},
+            where: '$_nameColumn = ?',
+            whereArgs: [itemName],
+          );
+        }
+
+        return true; // Item found in SQLite
       }
+
+      // If not found in SQLite, check Firebase
       final snapshot = await FirebaseDatabase.instance.ref().child('products/').get();
       if (snapshot.exists) {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         for (var category in data.values) {
           final items = Map<String, dynamic>.from(category['items']);
           if (items.values.any((item) => item['name'] == itemName)) {
-            return true;  // Item found in Firebase
+            return true; // Item found in Firebase
           }
         }
       }
     } catch (e) {
       print("Error checking item existence: $e");
     }
-    return false;  // Item not found in both SQLite and Firebase
+    return false; // Item not found in both SQLite and Firebase
   }
   Future<void> addItem(String name, double price) async {
     final db = await database;
