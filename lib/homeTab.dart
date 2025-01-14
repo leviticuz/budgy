@@ -15,7 +15,6 @@ class HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Centered logo
         Center(
           child: Opacity(
             opacity: 0.3,
@@ -30,7 +29,7 @@ class HomeTab extends StatelessWidget {
           padding: EdgeInsets.all(16),
           initialItemCount: itemList.length,
           itemBuilder: (context, index, animation) {
-            final item = itemList[index];
+            final item = itemList[itemList.length - 1 - index];
             return Dismissible(
               key: Key(item.title),
               direction: DismissDirection.endToStart,

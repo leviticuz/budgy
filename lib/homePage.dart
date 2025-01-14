@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // User cancels the action
+                Navigator.of(context).pop(false);
                 setState(() {
                   _loadItems();
                 });
@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
                 });
                 Navigator.pop(context); // Close the dialog
               },
-              child: Text("Delete"),
+              child: Text("Delete", style: TextStyle(color: Color(0xFFb8181e)),),
             ),
           ],
         );
