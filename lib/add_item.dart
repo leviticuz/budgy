@@ -77,7 +77,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
   // Save item to SharedPreferences
-  Future<void> _saveItemToPreferences(String name, double price, int quantity) async {
+  /*Future<void> _saveItemToPreferences(String name, double price, int quantity) async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('savedItems');
 
@@ -100,7 +100,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     }
 
     await prefs.setString('savedItems', jsonEncode(itemList));
-  }
+  }*/
 
   void _showWarningDialog() {
     showDialog(
@@ -115,7 +115,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 double price = double.parse(_priceController.text.replaceAll(',', ''));
                 int quantity = int.parse(_quantityController.text);
                 widget.onAddItem(_productController.text, price, quantity);
-                _saveItemToPreferences(_productController.text, price, quantity);
+                /*_saveItemToPreferences(_productController.text, price, quantity);*/
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
@@ -331,7 +331,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         _showWarningDialog();
                       } else {
                         widget.onAddItem(_productController.text, price, quantity);
-                        _saveItemToPreferences(name, price, quantity);
+                        /*_saveItemToPreferences(name, price, quantity);*/
                         Navigator.pop(context);
                       }
 

@@ -214,7 +214,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           onChanged: (bool? value) {
                             setState(() {
                               product.isChecked = value!;
+
                             });
+                            _updateItemInList(widget.item);
                           },
                         ),
                         title: Text(
