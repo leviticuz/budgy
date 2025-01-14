@@ -177,6 +177,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
+            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),
@@ -244,7 +245,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ),
                             PopupMenuButton<String>(
                               icon: Icon(Icons.more_vert, size: 20),
-                              offset: Offset(0, 30), // Moves the popup down by 30 pixels
+                              offset: Offset(0, 30),
                               onSelected: (String value) {
                                 if (value == 'edit') {
                                   _navigateToEditItemScreen(index, product);

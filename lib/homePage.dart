@@ -1,23 +1,24 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'item_details.dart';
 import 'homeTab.dart';
 import 'createList.dart';
 import 'seachBarOut.dart';
 import 'dashboard.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'shared_prefs_helper.dart'; // Import helper class
 
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-
 class _HomePageState extends State<HomePage> {
-  final _titleController = TextEditingController();
-  final _budgetController = TextEditingController();
-  final _dateController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _budgetController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   List<Item> itemList = [];
   int _selectedIndex = 0;
@@ -48,10 +49,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _addItemToList(String title, double budget, DateTime date) async {
-    final prefs = await SharedPreferences.getInstance();
-    final year = date.year;
-    final month = date.month.toString().padLeft(2, '0');
-    final monthKey = "$year-$month";
+    await SharedPrefsHelper.saveBudget(budget, date);
 
     setState(() {
       itemList.add(Item(
@@ -61,12 +59,10 @@ class _HomePageState extends State<HomePage> {
         items: [],
         selectedDate: DateTime.now(),
       ));
-      prefs.setDouble("${monthKey}_budget", budget); // Save budget here
-      _saveItems(); // Save the item list
-      _selectedIndex = 0;
+      _saveItems();
+      _selectedIndex = 0; // Navigate back to Home after saving
     });
   }
-
 
   void _deleteItem(Item item) {
     setState(() {
@@ -94,26 +90,19 @@ class _HomePageState extends State<HomePage> {
     String budgetText = _budgetController.text.trim();
     double? budget = double.tryParse(budgetText);
 
-    if (budget == null) {
+    if (budget == null || budget < 100 || budget > 9999999) {
+      String message = budget == null
+          ? 'Please enter a valid number for the budget'
+          : budget < 100
+          ? 'Budget must be at least ₱100'
+          : 'Budget cannot exceed ₱9,999,999';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid number for the budget'),
-          duration: Duration(seconds: 1),
-        ),
+        SnackBar(content: Text(message), duration: Duration(seconds: 1)),
       );
       return;
     }
-    if (budget < 100) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Budget must be at least ₱100')),
-      );
-      return;
-    }
-    if (budget > 9999999) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Budget cannot exceed ₱9,999,999')),
-      );
-      return;
-    }
+
     _addItemToList(_titleController.text, budget, _selectedDate);
   }
 
@@ -127,14 +116,8 @@ class _HomePageState extends State<HomePage> {
           budgetController: _budgetController,
           dateController: _dateController,
           selectedDate: _selectedDate,
-          onDatePicked: (pickedDate) {
-            setState(() {
-              _selectedDate = pickedDate;
-            });
-          },
-          onSelectDate: () {
-            _selectDate(context);
-          },
+          onDatePicked: (pickedDate) => setState(() => _selectedDate = pickedDate),
+          onSelectDate: () => _selectDate(context),
           isNewList: true,
         );
       case 2:
@@ -160,53 +143,37 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Color(0xFF5BB7A6),
         title: Text(
           _selectedIndex == 1 ? 'New List' : 'Lists',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
         automaticallyImplyLeading: false,
         leading: _selectedIndex == 1
             ? IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
+          onPressed: () => setState(() => _selectedIndex = 0),
         )
             : null,
         actions: _selectedIndex == 1
             ? [
           TextButton(
             onPressed: () {
-              if (_titleController.text.isNotEmpty ) {
-                if(
-                _budgetController.text.isNotEmpty){
-                  _validateBudget();
-                }
-                else{
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Budget is required'),
-                      duration: Duration(seconds:1),
-                    ),
-
-                  );
-                  return;
-                }
-              }
-              else{
+              if (_titleController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Title is required'),
-                      duration: Duration(seconds:1)),
+                  SnackBar(content: Text('Title is required'), duration: Duration(seconds: 1)),
                 );
                 return;
               }
+              if (_budgetController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Budget is required'), duration: Duration(seconds: 1)),
+                );
+                return;
+              }
+              _validateBudget();
             },
             child: Text(
               'Done',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             ),
           ),
         ]
@@ -225,22 +192,10 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.teal,
         unselectedItemColor: Colors.teal.shade900,
         items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            label: 'Create',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Create'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
         ],
       ),
     );

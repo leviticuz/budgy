@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'shared_prefs_helper.dart';
 
 class CreateTab extends StatefulWidget {
   final TextEditingController titleController;
@@ -22,6 +21,7 @@ class CreateTab extends StatefulWidget {
     required this.isNewList,
   });
 
+
   @override
   _CreateTabState createState() => _CreateTabState();
 }
@@ -37,32 +37,19 @@ class _CreateTabState extends State<CreateTab> {
       _loadData();
     }
   }
-
   void _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final year = widget.selectedDate.year;
-    final month = widget.selectedDate.month.toString().padLeft(2, '0');
-    final monthKey = "$year-$month";
-
-    // Load stored budget and spending for the selected month
-    final budget = prefs.getDouble("${monthKey}_budget") ?? 0.0;
-    final spending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
+    final budget = await SharedPrefsHelper.getBudget(widget.selectedDate);
+    final spending = await SharedPrefsHelper.getSpending(widget.selectedDate);
 
     setState(() {
       totalBudget = budget;
       totalSpending = spending;
-      monthlyData = [
-        {"totalBudget": totalBudget, "totalSpending": totalSpending}
-      ];
     });
   }
-  Future<void> saveDataToSharedPreferences(String title, double budget, DateTime selectedDate) async {
-    final prefs = await SharedPreferences.getInstance();
-    String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
-    await prefs.setDouble("${monthKey}_budget", budget);
 
-    double currentMonthSpending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
-    await prefs.setDouble("${monthKey}_spending", currentMonthSpending);
+  Future<void> _saveData() async {
+    final double budget = double.tryParse(widget.budgetController.text) ?? 0.0;
+    await SharedPrefsHelper.saveBudget(budget, widget.selectedDate);
   }
   @override
   Widget build(BuildContext context) {
