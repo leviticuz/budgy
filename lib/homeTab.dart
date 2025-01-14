@@ -6,8 +6,9 @@ import 'item_details.dart';
 class HomeTab extends StatelessWidget {
   final List<Item> itemList;
   final Function(Item) onDelete;
+  final Function(Item) onEdit;
 
-  HomeTab({required this.itemList, required this.onDelete});
+  HomeTab({required this.itemList, required this.onDelete, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -60,28 +61,49 @@ class HomeTab extends StatelessWidget {
                   subtitle: Text(
                     'Budget: ₱${item.budget.toStringAsFixed(2)}\nDate: ${DateFormat('yyyy-MM-dd').format(item.date)}',
                   ),
-                  trailing: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        bottom: 0,
-                        right: 30,
-                        child: Opacity(
-                          opacity: 0.5,
-                          child: Text(
-                            "Slide to delete",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
+                  trailing: PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, size: 20),
+                    offset: Offset(0, 30),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        onEdit(item);
+                      } else if (value == 'delete') {
+                        onDelete(item);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${item.title} deleted'),
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      return [
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          height: 30,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                            child: Text(
+                              'Edit',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
-                      ),
-                      // Arrow icon
-                      Icon(Icons.arrow_forward_ios, size: 16),
-                    ],
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          height: 30,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                            child: Text(
+                              'Delete',
+                              style: TextStyle(fontSize: 12, color: Color(0xFFb8181e)),
+                            ),
+                          ),
+                        ),
+                      ];
+                    },
                   ),
-                  onTap: () {
+                    onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
