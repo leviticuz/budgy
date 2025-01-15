@@ -40,56 +40,62 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  // Load all-time frequently bought items
   Future<void> _loadFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('frequentlyBoughtItems');
+    final String? storedData = prefs.getString('itemList');
+
     if (storedData != null) {
-      final Map<String, int> loadedData = Map<String, int>.from(jsonDecode(storedData));
+      final List<dynamic> itemListData = jsonDecode(storedData);
+
+      Map<String, int> updatedFrequentlyBoughtItems = {};
+
+      for (var item in itemListData) {
+        List<dynamic> items = item['items'];
+        for (var product in items) {
+          String itemName = product['name'];
+          int quantity = product['quantity'];
+          updatedFrequentlyBoughtItems.update(itemName, (value) => value + quantity, ifAbsent: () => quantity);
+        }
+      }
       setState(() {
-        frequentlyBoughtItems = loadedData;
+        frequentlyBoughtItems = updatedFrequentlyBoughtItems;
       });
     }
   }
 
-  // Load monthly frequently bought items, filter by selected month
+
   Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString('itemList'); // Fetching data using the correct key
+    final String? storedData = prefs.getString('itemList');
 
     if (storedData != null) {
-      // Decode the stored data into a list of items
       final List<dynamic> itemListData = jsonDecode(storedData);
 
       List<Map<String, dynamic>> filteredItems = [];
       for (var item in itemListData) {
-        // Check if the item's date matches the selected month
-        String itemDate = item['date']; // Example: "2025-01-11T19:16:47.200318"
+        String itemDate = item['date'];
         DateTime itemDateTime = DateTime.parse(itemDate);
 
-        // Filter by the selected year and month
         if (itemDateTime.year == selectedDate.year &&
             itemDateTime.month == (months.indexOf(selectedMonth!) + 1)) {
           filteredItems.add(item);
         }
       }
 
-      // Now process the filteredItems to count the frequencies
       Map<String, int> updatedMonthlyItems = {};
 
       for (var item in filteredItems) {
-        List<dynamic> items = item['items']; // List of item details
+        List<dynamic> items = item['items'];
         for (var product in items) {
-          String itemName = product['name']; // Item name (e.g., 'Liberty Condensada')
-          int quantity = product['quantity']; // Quantity purchased
+          String itemName = product['name'];
+          int quantity = product['quantity'];
 
-          // Add quantity to the map, updating it based on the existing or new item
           updatedMonthlyItems.update(itemName, (value) => value + quantity, ifAbsent: () => quantity);
         }
       }
 
       setState(() {
-        monthlyFrequentlyBoughtItems = updatedMonthlyItems; // Update the state with the new data
+        monthlyFrequentlyBoughtItems = updatedMonthlyItems;
       });
     }
   }
@@ -99,8 +105,8 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
       String itemName = entry.key.split(' ').take(3).join(' ') + '...';
 
       return Container(
-        width: MediaQuery.of(context).size.width / 3 - 24, // Ensures 3 items per row
-        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0), // Reduced vertical margin
+        width: MediaQuery.of(context).size.width / 3 - 24,
+        margin: EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
         child: Row(
           children: [
             Container(
@@ -119,7 +125,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                   fontSize: 11,
                   color: Colors.black,
                 ),
-                overflow: TextOverflow.ellipsis, // Handles long names gracefully
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -130,11 +136,11 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    int totalFrequency = frequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
+    double totalQuantity = frequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
     int totalMonthlyFrequency = monthlyFrequentlyBoughtItems.values.fold(0, (sum, value) => sum + value);
 
     List<PieChartSectionData> allTimeSections = frequentlyBoughtItems.entries.map((entry) {
-      double percentage = (entry.value / totalFrequency) * 100;
+      double percentage = (entry.value / totalQuantity) * 100;
       final isTouched = frequentlyBoughtItems.keys.toList().indexOf(entry.key) == touchedIndex;
       final fontSize = isTouched ? 16.0 : 12.0;
       final radius = isTouched ? 110.0 : 100.0;
@@ -281,10 +287,9 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                     );
                                   }).toList(),
                                 ),
-                                // Show a message when there is no data for the selected month
                                 monthlyFrequentlyBoughtItems.isEmpty
                                     ? Padding(
-                                  padding: const EdgeInsets.all(16.0),
+                                  padding: const EdgeInsets.all(30.0),
                                   child: Text('No data available for this month', style: TextStyle(fontSize: 16, color: Colors.red)),
                                 )
                                     : Expanded(

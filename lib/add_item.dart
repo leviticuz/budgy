@@ -108,7 +108,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Warning!"),
-          content: Text("Adding this item would exceed your set budget.\n\nWould you like to continue?"),
+          content: Text("Adding this item would exceed your set budget.\nWould you like to continue?"),
           actions: <Widget>[
             TextButton(
               onPressed: () {
