@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // User cancels the action
+                Navigator.of(context).pop(false);
                 setState(() {
                   _loadItems();
                 });
@@ -108,12 +108,38 @@ class _HomePageState extends State<HomePage> {
                 });
                 Navigator.pop(context); // Close the dialog
               },
-              child: Text("Delete"),
+              child: Text("Delete", style: TextStyle(color: Color(0xFFb8181e)),),
             ),
           ],
         );
       },
     );
+  }
+
+  void _editItem(Item item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateTab(
+          titleController: TextEditingController(text: item.title),
+          budgetController: TextEditingController(text: item.budget.toStringAsFixed(2)),
+          dateController: TextEditingController(text: DateFormat('yyyy-MM-dd').format(item.date)),
+          selectedDate: item.date,
+          onDatePicked: (pickedDate) => setState(() => item.date = pickedDate),
+          onSelectDate: () => _selectDate(context),
+          isNewList: false,
+        ),
+      ),
+    ).then((updatedItem) {
+      if (updatedItem != null) {
+        setState(() {
+          int index = itemList.indexWhere((i) => i.title == item.title);
+          if (index != -1) {
+            itemList[index] = updatedItem;
+          }
+        });
+      }
+    });
   }
 
 
@@ -155,7 +181,7 @@ class _HomePageState extends State<HomePage> {
   Widget _currentPage() {
     switch (_selectedIndex) {
       case 0:
-        return HomeTab(itemList: itemList, onDelete: _deleteItem);
+        return HomeTab(itemList: itemList, onDelete: _deleteItem,  onEdit: _editItem);
       case 1:
         return CreateTab(
           titleController: _titleController,
@@ -171,7 +197,7 @@ class _HomePageState extends State<HomePage> {
       case 3:
         return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems);
       default:
-        return HomeTab(itemList: itemList, onDelete: _deleteItem);
+        return HomeTab(itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
     }
   }
 
