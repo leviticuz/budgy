@@ -35,6 +35,8 @@ class _barChartState extends State<barChart> {
     List<Map<String, double>> tempData = [];
     double maxSpendingOrBudget = 0.0;
 
+    SharedPrefsHelper sharedPrefsHelper = SharedPrefsHelper();
+
     for (int i = 0; i < 12; i++) {
       double budget = 0;
       double spending = 0;
@@ -46,14 +48,12 @@ class _barChartState extends State<barChart> {
         final day = dayIndex.toString().padLeft(2, '0');
         final monthKey = "$year-$month-$day";
         budget += prefs.getDouble("${monthKey}_budget") ?? 0.0;
-
+        spending += await sharedPrefsHelper.saveSpending(0, DateTime(year, i + 1, dayIndex));
       }
 
-      // tempData.add({"totalBudget": budget, "totalSpending": spending});
-      // maxSpendingOrBudget = max(maxSpendingOrBudget, max(budget, spending));
+      tempData.add({"totalBudget": budget, "totalSpending": spending});
+      maxSpendingOrBudget = max(maxSpendingOrBudget, max(budget, spending));
     }
-
-
     setState(() {
       monthlyData = tempData;
       maxYValue = (maxSpendingOrBudget * 1.5).ceilToDouble();
@@ -223,7 +223,7 @@ class _barChartState extends State<barChart> {
                                 ),
                               ),
                               gridData: FlGridData(
-                                drawHorizontalLine: false,
+                                drawHorizontalLine: true,
                                 drawVerticalLine: false,
                               ),
                               titlesData: FlTitlesData(

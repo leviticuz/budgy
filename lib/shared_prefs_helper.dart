@@ -16,19 +16,17 @@ class SharedPrefsHelper {
     await prefs.setDouble("$monthKey$_budgetKey", newBudget);
   }
 
-  static Future<void> saveSpending(double spending, DateTime selectedDate) async {
-    final prefs = await SharedPreferences.getInstance();
-    // String monthKey = _generateMonthKey(selectedDate);
-    // await prefs.setDouble("$monthKey$_spendingKey", spending);
+  Future<double> saveSpending(double spending, DateTime selectedDate) async {
     String monthKey = _generateMonthKey(selectedDate);
+    double checkedItemPrices = await getCheckedItemPricesByDate(monthKey);
 
-    double existingSpending = prefs.getDouble("$monthKey$_spendingKey") ?? 0.0;
+    // Add the total checked item prices to the existing spending (or use it as the new spending)
+    spending += checkedItemPrices;
 
-    double newSpending = existingSpending + spending;
 
-    await prefs.setDouble("$monthKey$_spendingKey", newSpending);
-
+    return spending;
   }
+
 
   static Future<double> getBudget(DateTime selectedDate) async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,5 +45,43 @@ class SharedPrefsHelper {
   }
 
 
+  Future<double> getCheckedItemPricesByDate(String selectedDate) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Retrieve the JSON string from SharedPreferences
+    String? jsonString = prefs.getString('itemList');
+
+    // Return 0 if no itemList is found
+    if (jsonString == null) {
+      return 0;
+    }
+
+    // Decode the JSON string into a list of maps (each map representing an item)
+    List<dynamic> itemList = jsonDecode(jsonString);
+
+    // Variable to store the total price of checked items
+    double totalCheckedPrice = 0;
+
+    // Loop through the itemList to filter by date and check 'isChecked'
+    for (var item in itemList) {
+      String dateString = item['date'];
+      String thisDate = dateString.split('T')[0];
+
+
+      // Check if the date matches the selected date (ignoring time)
+      if (thisDate == selectedDate) {
+        // Loop through the 'items' list to filter checked items
+        for (var individualItem in item['items']) {
+          if (individualItem['isChecked'] == true) {
+            // Add the price of checked item to the totalCheckedPrice
+            totalCheckedPrice += individualItem['price'];
+          }
+        }
+      }
+    }
+
+    // Return the total price of checked items for the selected date
+    return totalCheckedPrice;
+  }
 
 }

@@ -84,7 +84,18 @@ class _HomePageState extends State<HomePage> {
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
                 String key = '${DateFormat('yyyy-MM-dd').format(item.date)}_budget';
-                await prefs.remove(key);
+                double budget = item.budget;
+                double? currentBudget = prefs.getDouble(key);
+
+                if (currentBudget != null){
+                  double updatedBudget = currentBudget - budget;
+
+                  if (updatedBudget == 0){
+                    await prefs.remove(key);
+                  }else{
+                    await prefs.setDouble(key, updatedBudget);
+                  }
+                }
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
