@@ -46,7 +46,7 @@ class _barChartState extends State<barChart> {
         final day = dayIndex.toString().padLeft(2, '0');
         final monthKey = "$year-$month-$day";
         budget += prefs.getDouble("${monthKey}_budget") ?? 0.0;
-        // spending += await saveSpending()
+
       }
 
       // tempData.add({"totalBudget": budget, "totalSpending": spending});
