@@ -45,6 +45,10 @@ dependencies:
   fl_chart: ^0.60.0
   sqflite: ^2.3.3+1
   path: ^1.8.0
+  flutter_screenutil: ^5.0.0+3
+  permission_handler: ^10.0.0
+  image_gallery_saver: ^2.0.3
+  screenshot: ^3.0.0
 
 dev_dependencies:
   flutter_test:

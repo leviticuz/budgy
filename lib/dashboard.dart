@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bar.dart';
+import 'report.dart';
 
 class Dashboard extends StatefulWidget {
   Dashboard({Key? key, required Map<String, int> frequentlyBoughtItems}) : super(key: key);
@@ -182,6 +183,15 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
         automaticallyImplyLeading: false,
         title: Text("Dashboard", style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.report),
+            onPressed: () {
+              // Call the method to show the report popup
+              FinancialReportGenerator().showFinancialReport(context);
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Center(
