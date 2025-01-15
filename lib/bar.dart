@@ -1,7 +1,9 @@
+import 'package:Budgy/shared_prefs_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+
 
 class barChart extends StatefulWidget {
   final DateTime selectedDate;
@@ -22,6 +24,8 @@ class _barChartState extends State<barChart> {
   void initState() {
     super.initState();
     _loadData();
+    totalBudget = 0;
+    totalSpending = 0;
   }
 
   Future<void> _loadData() async {
@@ -32,18 +36,23 @@ class _barChartState extends State<barChart> {
     double maxSpendingOrBudget = 0.0;
 
     for (int i = 0; i < 12; i++) {
+      double budget = 0;
+      double spending = 0;
       final month = (i + 1).toString().padLeft(2, '0');
-      final monthKey = "$year-$month";
 
-      final budget = prefs.getDouble("${monthKey}_budget") ?? 0.0;
-      final spending = prefs.getDouble("${monthKey}_spending") ?? 0.0;
+      int daysInMonth = DateTime(year, i + 1 + 1, 0).day;  // This gives the last day of the month
 
-      totalBudget = budget;
-      totalSpending = spending;
+      for (int dayIndex = 1; dayIndex <= daysInMonth; dayIndex++) {
+        final day = dayIndex.toString().padLeft(2, '0');
+        final monthKey = "$year-$month-$day";
+        budget += prefs.getDouble("${monthKey}_budget") ?? 0.0;
+        // spending += await saveSpending()
+      }
 
-      tempData.add({"totalBudget": budget, "totalSpending": spending});
-      maxSpendingOrBudget = max(maxSpendingOrBudget, max(budget, spending));
+      // tempData.add({"totalBudget": budget, "totalSpending": spending});
+      // maxSpendingOrBudget = max(maxSpendingOrBudget, max(budget, spending));
     }
+
 
     setState(() {
       monthlyData = tempData;
@@ -51,6 +60,7 @@ class _barChartState extends State<barChart> {
       if (maxYValue < 10) maxYValue = 10;
     });
   }
+
 
   List<BarChartGroupData> _generateChartGroups() {
     return List.generate(monthlyData.length, (index) {

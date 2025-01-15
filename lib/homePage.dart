@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'item_details.dart';
 import 'homeTab.dart';
 import 'createList.dart';
@@ -50,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   void _addItemToList(String title, double budget, DateTime date) async {
     await SharedPrefsHelper.saveBudget(budget, date);
-
+    print(date);
     setState(() {
       itemList.add(Item(
         title: title,
@@ -75,11 +74,23 @@ class _HomePageState extends State<HomePage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(false); // User cancels the action
+                setState(() {
+                  _loadItems();
+                });
               },
               child: Text("Cancel"),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                String key = '${DateFormat('yyyy-MM-dd').format(item.date)}_budget';
+                await prefs.remove(key);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${item.title} deleted'),
+                  ),
+                );
                 setState(() {
                   itemList.remove(item); // Delete the item
                   _saveItems(); // Save updated list

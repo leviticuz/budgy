@@ -6,6 +6,7 @@ import 'item_details.dart';
 class HomeTab extends StatelessWidget {
   final List<Item> itemList;
   final Function(Item) onDelete;
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   HomeTab({required this.itemList, required this.onDelete});
 
@@ -23,21 +24,17 @@ class HomeTab extends StatelessWidget {
           ),
         ),
         // List of items
-        ListView.builder(
+        AnimatedList(
+          key: _listKey,
           padding: EdgeInsets.all(16),
-          itemCount: itemList.length,
-          itemBuilder: (context, index) {
+          initialItemCount: itemList.length,
+          itemBuilder: (context, index, animation) {
             final item = itemList[index];
             return Dismissible(
               key: Key(item.title),
               direction: DismissDirection.endToStart,
               onDismissed: (direction) {
                 onDelete(item);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${item.title} deleted'),
-                  ),
-                );
               },
               background: Container(
                 margin: EdgeInsets.symmetric(vertical: 8),

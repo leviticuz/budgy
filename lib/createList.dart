@@ -46,11 +46,6 @@ class _CreateTabState extends State<CreateTab> {
       totalSpending = spending;
     });
   }
-
-  Future<void> _saveData() async {
-    final double budget = double.tryParse(widget.budgetController.text) ?? 0.0;
-    await SharedPrefsHelper.saveBudget(budget, widget.selectedDate);
-  }
   @override
   Widget build(BuildContext context) {
     if (widget.isNewList) {
