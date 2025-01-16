@@ -185,7 +185,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.report),
+            icon: Icon(Icons.flag),
             onPressed: () {
               // Call the method to show the report popup
               FinancialReportGenerator().showFinancialReport(context);
@@ -274,7 +274,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                   child: Wrap(
                                     spacing: 8.0,
                                     runSpacing: 4.0,
-                                    children: LegendItems(frequentlyBoughtItems),
+                                    children: LegendItems(frequentlyBoughtItems).take(8).toList(),
                                   ),
                                 ),
                               ],
@@ -333,7 +333,7 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                                   child: Wrap(
                                     spacing: 8.0,  // Horizontal gap between items
                                     runSpacing: 4.0,  // Vertical gap between rows
-                                    children: LegendItems(monthlyFrequentlyBoughtItems),
+                                    children: LegendItems(monthlyFrequentlyBoughtItems).take(8).toList(),
                                   ),
                                 ),
                               ],

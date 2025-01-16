@@ -65,11 +65,6 @@ class HomeTab extends StatelessWidget {
                         onEdit(item);
                       } else if (value == 'delete') {
                         onDelete(item);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${item.title} deleted'),
-                          ),
-                        );
                       }
                     },
                     itemBuilder: (BuildContext context) {

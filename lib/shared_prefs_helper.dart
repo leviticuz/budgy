@@ -74,7 +74,7 @@ class SharedPrefsHelper {
         for (var individualItem in item['items']) {
           if (individualItem['isChecked'] == true) {
             // Add the price of checked item to the totalCheckedPrice
-            totalCheckedPrice += individualItem['price'];
+            totalCheckedPrice += (individualItem['price']*individualItem['quantity']);
           }
         }
       }

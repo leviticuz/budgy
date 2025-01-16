@@ -260,8 +260,15 @@ class _SearchbarState extends State<Searchbar> {
                                   trailing: sqliteItems.contains(item)
                                       ? PopupMenuButton<String>(
                                     onSelected: (String value) {
-                                      if (value == 'delete') {
-                                        deleteSQLiteItem(index);
+                                      if (value == 'edit') {
+                                        _navigateToEditItemScreen(index, product);
+                                      } else if (value == 'delete') {
+                                        setState(() {
+                                          widget.item.items.removeAt(index);
+                                        });
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("${product.name} deleted")),
+                                        );
                                       }
                                     },
                                     itemBuilder: (context) => [
