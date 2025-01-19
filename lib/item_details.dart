@@ -34,7 +34,7 @@ class Item {
           .map((item) => ItemDetail.fromJson(item))
           .toList(),
       selectedDate: DateTime.now(),
-      creationDate: DateTime.now(),
+      creationDate: DateTime.parse(json['creationdate']),
     );
   }
 }
