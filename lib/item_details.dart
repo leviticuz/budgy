@@ -4,6 +4,7 @@ class Item {
   DateTime date;
   List<ItemDetail> items;
   DateTime selectedDate;
+  DateTime creationDate;
 
   Item({
     required this.title,
@@ -11,6 +12,7 @@ class Item {
     required this.date,
     required this.items,
     required this.selectedDate,
+    required this.creationDate,
   });
 
   Map<String, dynamic> toJson() {
@@ -19,6 +21,7 @@ class Item {
       'budget': budget,
       'date': date.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
+      'creationdate': creationDate.toIso8601String(),
     };
   }
 
@@ -31,6 +34,7 @@ class Item {
           .map((item) => ItemDetail.fromJson(item))
           .toList(),
       selectedDate: DateTime.now(),
+      creationDate: DateTime.now(),
     );
   }
 }

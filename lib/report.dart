@@ -95,132 +95,14 @@ class FinancialReportGenerator {
       return;
     }
 
-    String selectedYear = "2025";
-    String selectedMonth = "January";
-    String selectedWeek = "1st Week";
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final annualData = _calculateAnnualData(itemList, selectedYear);
-            final monthlyData =
-            _calculateMonthlyData(itemList, selectedYear, selectedMonth);
-            final weeklyData = _calculateWeeklyData(
-              itemList,
-              selectedYear,
-              selectedMonth,
-              selectedWeek,
-            );
-
-            return AlertDialog(
-              title: Text("Budgy Financial Report"),
-              content: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Year Dropdown
-                    DropdownButton<String>(
-                      value: selectedYear,
-                      items: _extractYears(itemList)
-                          .map((year) => DropdownMenuItem<String>(
-                        value: year,
-                        child: Text(year),
-                      ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedYear = value;
-                            selectedMonth = "January"; // Reset month on year change
-                            selectedWeek = "1st Week"; // Reset week on year change
-                          });
-                        }
-                      },
-                    ),
-                    Text("Annual Total Budget: \₱${annualData['budget']}"),
-                    Text("Annual Total Expenses: \₱${annualData['expenses']}"),
-                    Text("Annual Total Saved: \₱${annualData['saved']}"),
-                    Text("Frequently Bought Items:"),
-                    ...annualData['frequentItems']
-                        .map<Widget>((item) => Text(
-                        "- ${item['name']} (${item['percentage']}%)"))
-                        .toList(),
-
-                    Divider(),
-
-                    // Month Dropdown
-                    DropdownButton<String>(
-                      value: selectedMonth,
-                      items: _months
-                          .map((month) => DropdownMenuItem<String>(
-                        value: month,
-                        child: Text(month),
-                      ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedMonth = value;
-                            selectedWeek = "1st Week"; // Reset week on month change
-                          });
-                        }
-                      },
-                    ),
-                    Text("Monthly Budget: \₱${monthlyData['budget']}"),
-                    Text("Monthly Expenses: \₱${monthlyData['expenses']}"),
-                    Text("Monthly Saved: \₱${monthlyData['saved']}"),
-                    Text("Frequently Bought Items:"),
-                    ...monthlyData['frequentItems']
-                        .map<Widget>((item) => Text(
-                        "- ${item['name']} (${item['percentage']}%)"))
-                        .toList(),
-
-                    Divider(),
-
-                    // Week Dropdown
-                    DropdownButton<String>(
-                      value: selectedWeek,
-                      items: _weeks
-                          .map((week) => DropdownMenuItem<String>(
-                        value: week,
-                        child: Text(week),
-                      ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedWeek = value;
-                          });
-                        }
-                      },
-                    ),
-                    Text("Weekly Budget: \₱${weeklyData['budget']}"),
-                    Text("Weekly Expenses: \₱${weeklyData['expenses']}"),
-                    Text("Weekly Saved: \₱${weeklyData['saved']}"),
-                    Text("Frequently Bought Items:"),
-                    ...weeklyData['frequentItems']
-                        .map<Widget>((item) => Text(
-                        "- ${item['name']} (${item['percentage']}%)"))
-                        .toList(),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text("Close"),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FinancialReportScreen(itemList: itemList),
+      ),
     );
   }
+
 
   List<String> _extractYears(List<dynamic> itemList) {
     return itemList
@@ -323,6 +205,135 @@ class FinancialReportGenerator {
           ],
         );
       },
+    );
+  }
+}
+
+class FinancialReportScreen extends StatefulWidget {
+  final List<dynamic> itemList;
+
+  const FinancialReportScreen({Key? key, required this.itemList}) : super(key: key);
+
+  @override
+  _FinancialReportScreenState createState() => _FinancialReportScreenState();
+}
+
+class _FinancialReportScreenState extends State<FinancialReportScreen> {
+  String selectedYear = "2025";
+  String selectedMonth = "January";
+  String selectedWeek = "1st Week";
+
+  late Map<String, dynamic> annualData;
+  late Map<String, dynamic> monthlyData;
+  late Map<String, dynamic> weeklyData;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateReports();
+  }
+
+  void _calculateReports() {
+    annualData = FinancialReportGenerator()._calculateAnnualData(widget.itemList, selectedYear);
+    monthlyData = FinancialReportGenerator()._calculateMonthlyData(widget.itemList, selectedYear, selectedMonth);
+    weeklyData = FinancialReportGenerator()._calculateWeeklyData(widget.itemList, selectedYear, selectedMonth, selectedWeek);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Budgy Financial Report"),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButton<String>(
+              value: selectedYear,
+              items: FinancialReportGenerator()._extractYears(widget.itemList)
+                  .map((year) => DropdownMenuItem<String>(
+                value: year,
+                child: Text(year),
+              ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    selectedYear = value;
+                    selectedMonth = "January"; // Reset month on year change
+                    selectedWeek = "1st Week"; // Reset week on year change
+                    _calculateReports();
+                  });
+                }
+              },
+            ),
+            Text("Annual Total Budget: \₱${annualData['budget']}"),
+            Text("Annual Total Expenses: \₱${annualData['expenses']}"),
+            Text("Annual Total Saved: \₱${annualData['saved']}"),
+            Text("Frequently Bought Items:"),
+            ...annualData['frequentItems']
+                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
+                .toList(),
+
+            Divider(),
+
+            DropdownButton<String>(
+              value: selectedMonth,
+              items: FinancialReportGenerator()._months
+                  .map((month) => DropdownMenuItem<String>(
+                value: month,
+                child: Text(month),
+              ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    selectedMonth = value;
+                    selectedWeek = "1st Week"; // Reset week on month change
+                    _calculateReports();
+                  });
+                }
+              },
+            ),
+            Text("Monthly Budget: \₱${monthlyData['budget']}"),
+            Text("Monthly Expenses: \₱${monthlyData['expenses']}"),
+            Text("Monthly Saved: \₱${monthlyData['saved']}"),
+            Text("Frequently Bought Items:"),
+            ...monthlyData['frequentItems']
+                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
+                .toList(),
+
+            Divider(),
+
+            DropdownButton<String>(
+              value: selectedWeek,
+              items: FinancialReportGenerator()._weeks
+                  .map((week) => DropdownMenuItem<String>(
+                value: week,
+                child: Text(week),
+              ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    selectedWeek = value;
+                    _calculateReports();
+                  });
+                }
+              },
+            ),
+            Text("Weekly Budget: \₱${weeklyData['budget']}"),
+            Text("Weekly Expenses: \₱${weeklyData['expenses']}"),
+            Text("Weekly Saved: \₱${weeklyData['saved']}"),
+            Text("Frequently Bought Items:"),
+            ...weeklyData['frequentItems']
+                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
+                .toList(),
+          ],
+        ),
+      ),
     );
   }
 }

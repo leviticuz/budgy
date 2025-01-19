@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   void _addItemToList(String title, double budget, DateTime date) async {
     await SharedPrefsHelper.saveBudget(budget, date);
-    print(date);
+
     setState(() {
       itemList.add(Item(
         title: title,
@@ -57,6 +57,7 @@ class _HomePageState extends State<HomePage> {
         date: date,
         items: [],
         selectedDate: DateTime.now(),
+        creationDate: DateTime.now(),
       ));
       _saveItems();
       _selectedIndex = 0; // Navigate back to Home after saving
@@ -116,8 +117,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _editItem(Item item) {
-    Navigator.push(
+  void _editItem(Item item) async {
+    // Save original values before navigation
+    double originalBudget = item.budget;
+    DateTime originalDate = item.date;
+
+    // Navigate and get the updated item
+    final updatedItem = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CreateTab(
@@ -130,18 +136,48 @@ class _HomePageState extends State<HomePage> {
           isNewList: false,
         ),
       ),
-    ).then((updatedItem) {
-      if (updatedItem != null) {
-        setState(() {
-          int index = itemList.indexWhere((i) => i.title == item.title);
-          if (index != -1) {
-            itemList[index] = updatedItem;
-          }
-        });
-      }
-    });
-  }
+    );
 
+    if (updatedItem != null) {
+      // Perform async work before calling setState
+      final prefs = await SharedPreferences.getInstance();
+      const String _budgetKey = "_budget";
+
+      double newBudget = updatedItem.budget;
+      DateTime newDate = updatedItem.date;
+
+      int index = itemList.indexWhere((i) => i.title == item.title);
+      if (index != -1) {
+        itemList[index] = updatedItem; // Update the item in the list
+      }
+
+      // Save changes to shared preferences
+      await _saveItems(); // Ensure this updates the shared preferences properly
+
+      // Calculate budget difference
+      double finalBudget = newBudget - originalBudget;
+
+      // If the date has changed, update the budget for the new date
+      if (originalDate != newDate) {
+        await SharedPrefsHelper.saveBudget(newBudget, newDate);
+
+        String monthKey = "${originalDate.year}-${originalDate.month.toString().padLeft(2, '0')}-${originalDate.day.toString().padLeft(2, '0')}";
+        double existingBudget = prefs.getDouble("$monthKey$_budgetKey") ?? 0.0;
+        double saveBudget = existingBudget + finalBudget;
+
+        if (saveBudget == 0) {
+          await prefs.remove("$monthKey$_budgetKey");
+        } else {
+          await prefs.setDouble("$monthKey$_budgetKey", saveBudget);
+        }
+      } else {
+        await SharedPrefsHelper.saveBudget(finalBudget, originalDate);
+      }
+
+      // Now call setState to update the UI
+      setState(() {});
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
@@ -158,7 +194,47 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _validateBudget() {
+  Future<bool> _confirmDateBeforeCreate(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: Colors.amber,
+            ),
+            SizedBox(width: 8), // Add some spacing between the icon and the text
+            Text('Confirm Date'),
+          ],
+        ),
+        content: Row(
+          children: [
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "Are you sure the date is correct? It cannot be changed in the future.",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("Confirm"),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+
+  void _validateBudget() async {
     String budgetText = _budgetController.text.trim();
     double? budget = double.tryParse(budgetText);
 
@@ -174,6 +250,9 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
+
+    final confirm = await _confirmDateBeforeCreate(context);
+    if (!confirm) return;
 
     _addItemToList(_titleController.text, budget, _selectedDate);
   }

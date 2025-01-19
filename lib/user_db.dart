@@ -117,4 +117,20 @@ class DatabaseService {
     }
   }
 
+  Future<void> updateItem(Item item) async {
+    final db = await database;
+    try {
+      await db.update(
+        _tblName,
+        {
+          _nameColumn: item.item_name ?? '',
+          _priceColumn: item.item_price ?? 0.0
+        },
+        where: '$_nameColumn = ?',
+        whereArgs: [item.item_name],
+      );
+    } catch (e) {
+      print("Error updating item: $e");
+    }
+  }
 }

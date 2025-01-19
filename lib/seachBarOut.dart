@@ -1,9 +1,9 @@
 import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:Budgy/user_db.dart'; // Update with the correct path
 import 'dart:async';
-import 'homePage.dart';
+import 'package:Budgy/user_db.dart';
+import 'package:Budgy/EditItemScreen.dart';
 
 class Seachbarout extends StatefulWidget {
   const Seachbarout({super.key});
@@ -107,30 +107,36 @@ class _SeachbaroutState extends State<Seachbarout> {
     setState(() {
       category = value;
 
-      // Check for matching keywords
-      String? matchedCategory = keywordToCategory.entries
-          .firstWhere((entry) => entry.key.toLowerCase() == value.toLowerCase(), orElse: () => const MapEntry("", ""))
-          .value;
-
-      // If a keyword matches, filter by its associated category
-      if (matchedCategory.isNotEmpty) {
-        display_list = firebaseItems.where((element) =>
-        element.category_name != null &&
-            element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())).toList()
-          ..addAll(sqliteItems.where((element) =>
-          element.category_name != null &&
-              element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())));
+      if (value.isEmpty) {
+        // Reset display_list to its initial state
+        display_list = List.from(sqliteItems)..addAll(firebaseItems);
       } else {
-        // Default category filtering
-        display_list = firebaseItems.where((element) =>
-        element.category_name != null &&
-            element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
-          ..addAll(sqliteItems.where((element) =>
+        // Check for matching keywords
+        String? matchedCategory = keywordToCategory.entries
+            .firstWhere((entry) => entry.key.toLowerCase() == value.toLowerCase(), orElse: () => const MapEntry("", ""))
+            .value;
+
+        // If a keyword matches, filter by its associated category
+        if (matchedCategory.isNotEmpty) {
+          display_list = firebaseItems.where((element) =>
           element.category_name != null &&
-              element.category_name!.toLowerCase().contains(value.toLowerCase())));
+              element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())).toList()
+            ..addAll(sqliteItems.where((element) =>
+            element.category_name != null &&
+                element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())));
+        } else {
+          // Default category filtering
+          display_list = firebaseItems.where((element) =>
+          element.category_name != null &&
+              element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
+            ..addAll(sqliteItems.where((element) =>
+            element.category_name != null &&
+                element.category_name!.toLowerCase().contains(value.toLowerCase())));
+        }
       }
     });
   }
+
 
   void deleteSQLiteItem(int index) async {
     var itemToDelete = sqliteItems[index];
@@ -191,7 +197,7 @@ class _SeachbaroutState extends State<Seachbarout> {
               backgroundColor: Color(0xFF5BB7A6),
               automaticallyImplyLeading: false,
               title: Text(
-                "Enter category to search",
+                "Enter item to search",
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -286,9 +292,32 @@ class _SeachbaroutState extends State<Seachbarout> {
                                   onSelected: (String value) {
                                     if (value == 'delete') {
                                       deleteSQLiteItem(index);
+                                    } else if (value == 'edit') {
+                                      // Navigate to EditItemScreen when "Edit" is selected
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => EditItemScreen(item: item), // Pass the selected item
+                                        ),
+                                      ).then((updatedItem) {
+                                        if (updatedItem != null) {
+                                          setState(() {
+                                            // Update the display list with the edited item
+                                            int itemIndex = sqliteItems.indexWhere((i) => i.item_name == updatedItem.item_name); // Use item_name as unique identifier
+                                            if (itemIndex != -1) {
+                                              sqliteItems[itemIndex] = updatedItem;
+                                              display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update list with updated SQLite item
+                                            }
+                                          });
+                                        }
+                                      });
                                     }
                                   },
                                   itemBuilder: (context) => [
+                                    PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Text('Edit'),
+                                    ),
                                     PopupMenuItem<String>(
                                       value: 'delete',
                                       child: Text('Delete'),

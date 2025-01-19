@@ -55,7 +55,7 @@ class HomeTab extends StatelessWidget {
                 child: ListTile(
                   title: Text(item.title, style: TextStyle(fontSize: 18)),
                   subtitle: Text(
-                    'Budget: ₱${item.budget.toStringAsFixed(2)}\nDate: ${DateFormat('yyyy-MM-dd').format(item.date)}',
+                    'Budget: ₱${item.budget.toStringAsFixed(2)}\nBudget Date: ${DateFormat('yyyy-MM-dd').format(item.date)}\nDate Created: ${DateFormat('yyyy-MM-dd').format(item.creationDate)}',
                   ),
                   trailing: PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert, size: 20),

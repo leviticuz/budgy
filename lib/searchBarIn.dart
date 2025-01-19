@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'package:Budgy/user_db.dart';
+import 'package:Budgy/EditItemScreen.dart';
 
 class Searchbar extends StatefulWidget {
   const Searchbar({super.key});
@@ -257,31 +258,47 @@ class _SearchbarState extends State<Searchbar> {
                                         ),
                                     ],
                                   ),
-                                  trailing: sqliteItems.contains(item)
-                                      ? PopupMenuButton<String>(
-                                    onSelected: (String value) {
-                                      if (value == 'edit') {
-                                        _navigateToEditItemScreen(index, product);
-                                      } else if (value == 'delete') {
-                                        setState(() {
-                                          widget.item.items.removeAt(index);
-                                        });
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("${product.name} deleted")),
-                                        );
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem<String>(
-                                        value: 'delete',
-                                        child: Text('Delete'),
-                                      ),
-                                    ],
-                                  )
-                                      : Column(
+                                    trailing: sqliteItems.contains(item)
+                                        ? PopupMenuButton<String>(
+                                      onSelected: (String value) {
+                                        if (value == 'delete') {
+                                          deleteSQLiteItem(index);
+                                        } else if (value == 'edit') {
+                                          // Navigate to EditItemScreen when "Edit" is selected
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => EditItemScreen(item: item), // Pass the selected item
+                                            ),
+                                          ).then((updatedItem) {
+                                            if (updatedItem != null) {
+                                              setState(() {
+                                                // Update the display list with the edited item
+                                                int itemIndex = sqliteItems.indexWhere((i) => i.item_name == updatedItem.item_name); // Use item_name as unique identifier
+                                                if (itemIndex != -1) {
+                                                  sqliteItems[itemIndex] = updatedItem;
+                                                  display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update list with updated SQLite item
+                                                }
+                                              });
+                                            }
+                                          });
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Text('Edit'),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Text('Delete'),
+                                        ),
+                                      ],
+                                    )
+
+                                    : Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      // Firebase items display price
                                       if (item.item_price != null)
                                         Text(
                                           "₱${item.item_price.toString()}",
@@ -292,7 +309,6 @@ class _SearchbarState extends State<Searchbar> {
                                           ),
                                         ),
                                       SizedBox(height: 4),
-                                      // Display market price for Firebase items if available
                                       if (item_cost != null && item_cost != "n/a")
                                         Text(
                                           "Market Price: ₱$item_cost",
@@ -302,7 +318,6 @@ class _SearchbarState extends State<Searchbar> {
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
-                                      // Display "n/a" if market price is not available
                                       if (item_cost == null || item_cost == "n/a")
                                         Text(
                                           "Market Price: n/a",

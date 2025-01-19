@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'shared_prefs_helper.dart';
+import 'item_details.dart';
 
 class CreateTab extends StatefulWidget {
   final TextEditingController titleController;
@@ -21,7 +23,6 @@ class CreateTab extends StatefulWidget {
     required this.isNewList,
   });
 
-
   @override
   _CreateTabState createState() => _CreateTabState();
 }
@@ -30,13 +31,19 @@ class _CreateTabState extends State<CreateTab> {
   double totalBudget = 0.0;
   double totalSpending = 0.0;
   List<Map<String, double>> monthlyData = [];
+
   @override
   void initState() {
     super.initState();
     if (!widget.isNewList) {
       _loadData();
+    } else {
+      // Clear only when the list is new and the widget is initialized
+      widget.titleController.clear();
+      widget.budgetController.clear();
     }
   }
+
   void _loadData() async {
     final budget = await SharedPrefsHelper.getBudget(widget.selectedDate);
     final spending = await SharedPrefsHelper.getSpending(widget.selectedDate);
@@ -46,14 +53,47 @@ class _CreateTabState extends State<CreateTab> {
       totalSpending = spending;
     });
   }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.isNewList) {
-      widget.titleController.clear();
-      widget.budgetController.clear();
-    }
-
     return Scaffold(
+      appBar: widget.isNewList
+          ? null
+          : AppBar(
+        title: Text('Edit List'),
+        backgroundColor: Color(0xFF5BB7A6),
+        actions: widget.isNewList
+            ? null
+            : [
+          IconButton(
+            icon: Icon(Icons.check),
+            onPressed: () async {
+              if (widget.titleController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Title cannot be empty')),
+                );
+                return;
+              }
+              if (widget.budgetController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Budget cannot be empty')),
+                );
+                return;
+              }
+              final updatedItem = Item(
+                title: widget.titleController.text,
+                budget: double.tryParse(widget.budgetController.text) ?? 0.0,
+                date: widget.selectedDate,
+                items: [],
+                selectedDate: DateTime.now(),
+                creationDate: DateTime.now(),
+              );
+
+              Navigator.pop(context, updatedItem); // Return the updated item
+            },
+          ),
+        ],
+      ),
       backgroundColor: Color(0xFFB1E8DE),
       body: SingleChildScrollView(
         child: Padding(
@@ -114,25 +154,31 @@ class _CreateTabState extends State<CreateTab> {
                                 border: InputBorder.none,
                               ),
                               readOnly: true,
+                              style: widget.isNewList
+                                  ? TextStyle(color: Colors.black)
+                                  : TextStyle(color: Colors
+                                  .grey), // Gray out date if editing
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(Icons.calendar_today),
-                            onPressed: () async {
-                              DateTime today = DateTime.now();
-                              DateTime? selectedDate = await showDatePicker(
-                                context: context,
-                                initialDate: today,
-                                firstDate: today,
-                                lastDate: DateTime(today.year + 7),
-                              );
-                              if (selectedDate != null && selectedDate != widget.selectedDate) {
-                                widget.dateController.text = "${selectedDate.toLocal()}".split(' ')[0];
-                                widget.onDatePicked(selectedDate);
-                                setState(() {});
-                              }
-                            },
-                          ),
+                          if (widget.isNewList)
+                            IconButton(
+                              icon: Icon(Icons.calendar_today),
+                              onPressed: () async {
+                                DateTime today = DateTime.now();
+                                DateTime? selectedDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: today,
+                                  firstDate: today,
+                                  lastDate: DateTime(today.year + 7),
+                                );
+                                if (selectedDate != null &&
+                                    selectedDate != widget.selectedDate) {
+                                  widget.dateController.text =
+                                  "${selectedDate.toLocal()}".split(' ')[0];
+                                  widget.onDatePicked(selectedDate);
+                                }
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -159,9 +205,11 @@ class _CreateTabState extends State<CreateTab> {
                               labelText: 'Budget (₱)',
                               border: InputBorder.none,
                             ),
-                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d{0,2}'))
                             ],
                           ),
                           Text(
@@ -178,7 +226,8 @@ class _CreateTabState extends State<CreateTab> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [100, 500, 1000, 5000, 8000, 10000].map((price) {
+                      children: [100, 500, 1000, 5000, 8000, 10000].map((
+                          price) {
                         return GestureDetector(
                           onTap: () {
                             widget.budgetController.text = price.toString();
