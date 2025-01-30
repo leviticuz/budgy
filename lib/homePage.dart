@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'item_details.dart';
@@ -302,8 +303,7 @@ class _HomePageState extends State<HomePage> {
             _selectedIndex = 0;
           });
         } else {
-
-
+          SystemNavigator.pop();
         }
       },
       child: Scaffold(
