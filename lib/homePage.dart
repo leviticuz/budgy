@@ -303,14 +303,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _selectedIndex != 0,
+      canPop: _selectedIndex == 0,
       onPopInvoked: (didPop) {
-        if (!didPop) {
-          return;
+        if (_selectedIndex != 0) {
+          setState(() {
+            _selectedIndex = 0;
+          });
+        } else {
+          Navigator.of(context).maybePop();
         }
-        setState(() {
-          _selectedIndex = 0;
-        });
       },
       child: Scaffold(
         appBar: _selectedIndex != 2 && _selectedIndex != 3
