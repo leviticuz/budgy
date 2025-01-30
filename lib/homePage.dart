@@ -32,7 +32,8 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final itemListJson = jsonEncode(itemList.map((item) => item.toJson()).toList());
+    final itemListJson = jsonEncode(
+        itemList.map((item) => item.toJson()).toList());
     prefs.setString('itemList', itemListJson);
   }
 
@@ -70,7 +71,8 @@ class _HomePageState extends State<HomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Confirm Deletion"),
-          content: Text("Are you sure you want to permanently delete this list?"),
+          content: Text(
+              "Are you sure you want to permanently delete this list?"),
           actions: [
             TextButton(
               onPressed: () {
@@ -84,16 +86,17 @@ class _HomePageState extends State<HomePage> {
             TextButton(
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
-                String key = '${DateFormat('yyyy-MM-dd').format(item.date)}_budget';
+                String key = '${DateFormat('yyyy-MM-dd').format(
+                    item.date)}_budget';
                 double budget = item.budget;
                 double? currentBudget = prefs.getDouble(key);
 
-                if (currentBudget != null){
+                if (currentBudget != null) {
                   double updatedBudget = currentBudget - budget;
 
-                  if (updatedBudget == 0){
+                  if (updatedBudget == 0) {
                     await prefs.remove(key);
-                  }else{
+                  } else {
                     await prefs.setDouble(key, updatedBudget);
                   }
                 }
@@ -109,7 +112,8 @@ class _HomePageState extends State<HomePage> {
                 });
                 Navigator.pop(context); // Close the dialog
               },
-              child: Text("Delete", style: TextStyle(color: Color(0xFFb8181e)),),
+              child: Text(
+                "Delete", style: TextStyle(color: Color(0xFFb8181e)),),
             ),
           ],
         );
@@ -126,15 +130,19 @@ class _HomePageState extends State<HomePage> {
     final updatedItem = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateTab(
-          titleController: TextEditingController(text: item.title),
-          budgetController: TextEditingController(text: item.budget.toStringAsFixed(2)),
-          dateController: TextEditingController(text: DateFormat('yyyy-MM-dd').format(item.date)),
-          selectedDate: item.date,
-          onDatePicked: (pickedDate) => setState(() => item.date = pickedDate),
-          onSelectDate: () => _selectDate(context),
-          isNewList: false,
-        ),
+        builder: (context) =>
+            CreateTab(
+              titleController: TextEditingController(text: item.title),
+              budgetController: TextEditingController(
+                  text: item.budget.toStringAsFixed(2)),
+              dateController: TextEditingController(
+                  text: DateFormat('yyyy-MM-dd').format(item.date)),
+              selectedDate: item.date,
+              onDatePicked: (pickedDate) =>
+                  setState(() => item.date = pickedDate),
+              onSelectDate: () => _selectDate(context),
+              isNewList: false,
+            ),
       ),
     );
 
@@ -161,7 +169,8 @@ class _HomePageState extends State<HomePage> {
       if (originalDate != newDate) {
         await SharedPrefsHelper.saveBudget(newBudget, newDate);
 
-        String monthKey = "${originalDate.year}-${originalDate.month.toString().padLeft(2, '0')}-${originalDate.day.toString().padLeft(2, '0')}";
+        String monthKey = "${originalDate.year}-${originalDate.month.toString()
+            .padLeft(2, '0')}-${originalDate.day.toString().padLeft(2, '0')}";
         double existingBudget = prefs.getDouble("$monthKey$_budgetKey") ?? 0.0;
         double saveBudget = existingBudget + finalBudget;
 
@@ -197,39 +206,41 @@ class _HomePageState extends State<HomePage> {
   Future<bool> _confirmDateBeforeCreate(BuildContext context) async {
     return await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning,
-              color: Colors.amber,
+      builder: (context) =>
+          AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  Icons.warning,
+                  color: Colors.amber,
+                ),
+                SizedBox(width: 8),
+                // Add some spacing between the icon and the text
+                Text('Confirm Date'),
+              ],
             ),
-            SizedBox(width: 8), // Add some spacing between the icon and the text
-            Text('Confirm Date'),
-          ],
-        ),
-        content: Row(
-          children: [
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                "Are you sure the date is correct? It cannot be changed in the future.",
-                style: TextStyle(fontSize: 16),
+            content: Row(
+              children: [
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Are you sure the date is correct? It cannot be changed in the future.",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text("Cancel"),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text("Cancel"),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text("Confirm"),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text("Confirm"),
-          ),
-        ],
-      ),
     ) ?? false;
   }
 
@@ -260,14 +271,16 @@ class _HomePageState extends State<HomePage> {
   Widget _currentPage() {
     switch (_selectedIndex) {
       case 0:
-        return HomeTab(itemList: itemList, onDelete: _deleteItem,  onEdit: _editItem);
+        return HomeTab(
+            itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
       case 1:
         return CreateTab(
           titleController: _titleController,
           budgetController: _budgetController,
           dateController: _dateController,
           selectedDate: _selectedDate,
-          onDatePicked: (pickedDate) => setState(() => _selectedDate = pickedDate),
+          onDatePicked: (pickedDate) =>
+              setState(() => _selectedDate = pickedDate),
           onSelectDate: () => _selectDate(context),
           isNewList: true,
         );
@@ -276,7 +289,8 @@ class _HomePageState extends State<HomePage> {
       case 3:
         return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems);
       default:
-        return HomeTab(itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
+        return HomeTab(
+            itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
     }
   }
 
@@ -288,60 +302,76 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _selectedIndex != 2 && _selectedIndex != 3
-          ? AppBar(
-        backgroundColor: Color(0xFF5BB7A6),
-        title: Text(
-          _selectedIndex == 1 ? 'New List' : 'Lists',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        actions: _selectedIndex == 1
-            ? [
-          TextButton(
-            onPressed: () {
-              if (_titleController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Title is required'), duration: Duration(seconds: 1)),
-                );
-                return;
-              }
-              if (_budgetController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Budget is required'), duration: Duration(seconds: 1)),
-                );
-                return;
-              }
-              _validateBudget();
-            },
-            child: Text(
-              'Done',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-            ),
+    return PopScope(
+      canPop: _selectedIndex != 0,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          return;
+        }
+        setState(() {
+          _selectedIndex = 0;
+        });
+      },
+      child: Scaffold(
+        appBar: _selectedIndex != 2 && _selectedIndex != 3
+            ? AppBar(
+          backgroundColor: Color(0xFF5BB7A6),
+          title: Text(
+            _selectedIndex == 1 ? 'New List' : 'Lists',
+            style: TextStyle(color: Colors.white),
           ),
-        ]
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          actions: _selectedIndex == 1
+              ? [
+            TextButton(
+              onPressed: () {
+                if (_titleController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Title is required'),
+                        duration: Duration(seconds: 1)),
+                  );
+                  return;
+                }
+                if (_budgetController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Budget is required'),
+                        duration: Duration(seconds: 1)),
+                  );
+                  return;
+                }
+                _validateBudget();
+              },
+              child: Text(
+                'Done',
+                style: TextStyle(
+                    color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ]
+              : null,
+        )
             : null,
-      )
-          : null,
-      body: Container(
-        color: Color(0xFFB1E8DE),
-        child: _currentPage(),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        currentIndex: _selectedIndex,
-        onTap: _onBottomNavTapped,
-        selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.teal.shade900,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Create'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-        ],
+        body: Container(
+          color: Color(0xFFB1E8DE),
+          child: _currentPage(),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          currentIndex: _selectedIndex,
+          onTap: _onBottomNavTapped,
+          selectedItemColor: Colors.teal,
+          unselectedItemColor: Colors.teal.shade900,
+          items: [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.add_circle_outline), label: 'Create'),
+            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard), label: 'Dashboard'),
+          ],
+        ),
       ),
     );
   }
