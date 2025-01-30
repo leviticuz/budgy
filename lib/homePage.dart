@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'item_details.dart';
@@ -7,7 +8,8 @@ import 'homeTab.dart';
 import 'createList.dart';
 import 'seachBarOut.dart';
 import 'dashboard.dart';
-import 'shared_prefs_helper.dart'; // Import helper class
+import 'shared_prefs_helper.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   DateTime _selectedDate = DateTime.now();
   List<Item> itemList = [];
   int _selectedIndex = 0;
+  DateTime? _lastPressedTime;
   Map<String, int> frequentlyBoughtItems = {};
 
   @override
@@ -61,7 +64,7 @@ class _HomePageState extends State<HomePage> {
         creationDate: DateTime.now(),
       ));
       _saveItems();
-      _selectedIndex = 0; // Navigate back to Home after saving
+      _selectedIndex = 0;
     });
   }
 
@@ -122,11 +125,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _editItem(Item item) async {
-    // Save original values before navigation
     double originalBudget = item.budget;
     DateTime originalDate = item.date;
 
-    // Navigate and get the updated item
     final updatedItem = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -147,7 +148,6 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (updatedItem != null) {
-      // Perform async work before calling setState
       final prefs = await SharedPreferences.getInstance();
       const String _budgetKey = "_budget";
 
@@ -156,16 +156,13 @@ class _HomePageState extends State<HomePage> {
 
       int index = itemList.indexWhere((i) => i.title == item.title);
       if (index != -1) {
-        itemList[index] = updatedItem; // Update the item in the list
+        itemList[index] = updatedItem;
       }
 
-      // Save changes to shared preferences
-      await _saveItems(); // Ensure this updates the shared preferences properly
+      await _saveItems();
 
-      // Calculate budget difference
       double finalBudget = newBudget - originalBudget;
 
-      // If the date has changed, update the budget for the new date
       if (originalDate != newDate) {
         await SharedPrefsHelper.saveBudget(newBudget, newDate);
 
@@ -183,7 +180,6 @@ class _HomePageState extends State<HomePage> {
         await SharedPrefsHelper.saveBudget(finalBudget, originalDate);
       }
 
-      // Now call setState to update the UI
       setState(() {});
     }
   }
@@ -215,7 +211,6 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.amber,
                 ),
                 SizedBox(width: 8),
-                // Add some spacing between the icon and the text
                 Text('Confirm Date'),
               ],
             ),
@@ -300,19 +295,33 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<bool> _onWillPop() async {
+    if (_selectedIndex == 0) {
+      final now = DateTime.now();
+      if (_lastPressedTime == null || now.difference(_lastPressedTime!) > Duration(seconds: 2)) {
+        Fluttertoast.showToast(
+          msg: "Press back button again to exit",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+        );
+        _lastPressedTime = now;
+        return Future.value(false);
+      } else {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+        return Future.value(true);
+      }
+    }
+    setState(() {
+      _selectedIndex = 0;
+    });
+    return Future.value(false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _selectedIndex == 0,
-      onPopInvoked: (didPop) {
-        if (_selectedIndex != 0) {
-          setState(() {
-            _selectedIndex = 0;
-          });
-        } else {
-          Navigator.of(context).maybePop();
-        }
-      },
+    return WillPopScope(
+      onWillPop: _onWillPop, // Handle back button press here
       child: Scaffold(
         appBar: _selectedIndex != 2 && _selectedIndex != 3
             ? AppBar(
@@ -329,15 +338,19 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 if (_titleController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Title is required'),
-                        duration: Duration(seconds: 1)),
+                    SnackBar(
+                      content: Text('Title is required'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                   return;
                 }
                 if (_budgetController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Budget is required'),
-                        duration: Duration(seconds: 1)),
+                    SnackBar(
+                      content: Text('Budget is required'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                   return;
                 }
@@ -346,7 +359,9 @@ class _HomePageState extends State<HomePage> {
               child: Text(
                 'Done',
                 style: TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold),
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ]
@@ -377,3 +392,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
