@@ -303,7 +303,9 @@ class _HomePageState extends State<HomePage> {
             _selectedIndex = 0;
           });
         } else {
-          SystemNavigator.pop();
+          Future.delayed(Duration(milliseconds: 100), () {
+            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+          });
         }
       },
       child: Scaffold(
