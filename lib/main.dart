@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'homePage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,7 +106,7 @@ class GetStarted extends StatelessWidget {
 class LoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    Future.delayed(Duration(seconds: 2), () {
+    Future.delayed(Duration(seconds: 3), () {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
@@ -118,10 +119,12 @@ class LoadingScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/Logo8.png'),
               SizedBox(height: 25),
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
+              LottieBuilder.asset(
+                "assets/lottie/cart_loading.json",
+                width: 200,
+                height: 200,
+                fit: BoxFit.cover,
               ),
             ],
           ),
