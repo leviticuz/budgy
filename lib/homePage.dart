@@ -8,7 +8,8 @@ import 'homeTab.dart';
 import 'createList.dart';
 import 'seachBarOut.dart';
 import 'dashboard.dart';
-import 'shared_prefs_helper.dart'; // Import helper class
+import 'shared_prefs_helper.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   DateTime _selectedDate = DateTime.now();
   List<Item> itemList = [];
   int _selectedIndex = 0;
+  DateTime? _lastPressedTime;
   Map<String, int> frequentlyBoughtItems = {};
 
   @override
@@ -62,7 +64,7 @@ class _HomePageState extends State<HomePage> {
         creationDate: DateTime.now(),
       ));
       _saveItems();
-      _selectedIndex = 0; // Navigate back to Home after saving
+      _selectedIndex = 0;
     });
   }
 
@@ -293,21 +295,33 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<bool> _onWillPop() async {
+    if (_selectedIndex == 0) {
+      final now = DateTime.now();
+      if (_lastPressedTime == null || now.difference(_lastPressedTime!) > Duration(seconds: 2)) {
+        Fluttertoast.showToast(
+          msg: "Press back button again to exit",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+        );
+        _lastPressedTime = now;
+        return Future.value(false);
+      } else {
+        SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+        return Future.value(true);
+      }
+    }
+    setState(() {
+      _selectedIndex = 0;
+    });
+    return Future.value(false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _selectedIndex != 0,
-      onPopInvoked: (didPop) {
-        if (_selectedIndex != 0) {
-          setState(() {
-            _selectedIndex = 0;
-          });
-        } else {
-          Future.delayed(Duration(milliseconds: 100), () {
-            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-          });
-        }
-      },
+    return WillPopScope(
+      onWillPop: _onWillPop, // Handle back button press here
       child: Scaffold(
         appBar: _selectedIndex != 2 && _selectedIndex != 3
             ? AppBar(
@@ -325,16 +339,18 @@ class _HomePageState extends State<HomePage> {
                 if (_titleController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text('Title is required'),
-                        duration: Duration(seconds: 1)),
+                      content: Text('Title is required'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                   return;
                 }
                 if (_budgetController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text('Budget is required'),
-                        duration: Duration(seconds: 1)),
+                      content: Text('Budget is required'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                   return;
                 }
@@ -343,7 +359,9 @@ class _HomePageState extends State<HomePage> {
               child: Text(
                 'Done',
                 style: TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold),
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ]
