@@ -10,6 +10,7 @@ import 'seachBarOut.dart';
 import 'dashboard.dart';
 import 'shared_prefs_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'notifications_screen.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -32,7 +33,6 @@ class _HomePageState extends State<HomePage> {
     _loadItems();
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
   }
-
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = jsonEncode(
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
                 final prefs = await SharedPreferences.getInstance();
                 String key = '${DateFormat('yyyy-MM-dd').format(
                     item.date)}_budget';
-                double budget = item.budget;  
+                double budget = item.budget;
                 double? currentBudget = prefs.getDouble(key);
 
                 if (currentBudget != null) {
@@ -318,6 +318,7 @@ class _HomePageState extends State<HomePage> {
     return Future.value(false);
   }
 
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -332,40 +333,51 @@ class _HomePageState extends State<HomePage> {
           ),
           centerTitle: true,
           automaticallyImplyLeading: false,
-          actions: _selectedIndex == 1
-              ? [
-            TextButton(
-              onPressed: () {
-                if (_titleController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Title is required'),
-                      duration: Duration(seconds: 1),
-                    ),
+          actions: [
+            if (_selectedIndex != 1)
+              IconButton(
+                icon: Icon(Icons.notifications, color: Colors.white),
+                onPressed: () {
+                  // Navigate to the NotificationsScreen when the bell icon is tapped
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => NotificationsScreen()),
                   );
-                  return;
-                }
-                if (_budgetController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Budget is required'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                  return;
-                }
-                _validateBudget();
-              },
-              child: Text(
-                'Done',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                },
+              ),
+            if (_selectedIndex == 1)
+              TextButton(
+                onPressed: () {
+                  if (_titleController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Title is required'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                    return;
+                  }
+                  if (_budgetController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Budget is required'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                    return;
+                  }
+                  _validateBudget();
+                },
+                child: Text(
+                  'Done',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ]
-              : null,
+          ],
         )
             : null,
         body: Container(
@@ -392,4 +404,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
