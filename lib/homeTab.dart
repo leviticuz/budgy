@@ -13,7 +13,7 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // Two tabs: Normal and Recurring
+      length: 2,
       child: Scaffold(
         backgroundColor: Color(0xFFB1E8DE),
         body: Column(
