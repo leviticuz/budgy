@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'add_item.dart';
 import 'item_details.dart';
+import 'searchBarIn.dart';
 
 class ProductListScreen extends StatefulWidget {
   final Item item;
@@ -92,6 +93,60 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  void _showConfirmPriceDialog(ItemDetail product, int index) {
+    final TextEditingController priceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Price"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Do you confirm the price for '${product.name}'?"),
+              SizedBox(height: 8),
+              TextField(
+                controller: priceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: "Update Price (Optional)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.pop(context); // Close the modal
+              },
+            ),
+            ElevatedButton(
+              child: Text("Confirm"),
+              onPressed: () {
+                String enteredPrice = priceController.text.trim();
+                if (enteredPrice.isNotEmpty) {
+                  setState(() {
+                    product.price = double.parse(enteredPrice);
+                    _updateItemInList(widget.item); // Save updated price
+                  });
+                }
+                setState(() {
+                  product.isChecked = true; // Mark item as checked
+                });
+                _updateItemInList(widget.item); // Save to database
+                Navigator.pop(context); // Close the modal
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Future<void> _updateFrequentlyBoughtItems(String itemName) async {
     final prefs = await SharedPreferences.getInstance();
     final String? storedData = prefs.getString('frequentlyBoughtItems');
@@ -169,7 +224,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline),
-            onPressed: _navigateToAddItemScreen,
+            onPressed:(){ /*_navigateToAddItemScreen*/Navigator.push(
+              context,
+                MaterialPageRoute(builder: (context) => Searchbar()),
+            );
+          },
           ),
         ],
       ),
@@ -212,11 +271,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         leading: Checkbox(
                           value: product.isChecked,
                           onChanged: (bool? value) {
-                            setState(() {
-                              product.isChecked = value!;
-
-                            });
-                            _updateItemInList(widget.item);
+                            if (value == true) {
+                              _showConfirmPriceDialog(product, index);
+                            } else {
+                              setState(() {
+                                product.isChecked = false;
+                                _updateItemInList(widget.item);
+                              });
+                            }
                           },
                         ),
                         title: Text(
