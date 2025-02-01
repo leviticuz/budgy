@@ -60,13 +60,14 @@ class _SearchbarState extends State<Searchbar> {
             categoryItems.add(item);
           });
 
+          // Add category with its items
           tempCategories.add(Category(name: categoryName, items: categoryItems));
         });
 
         setState(() {
           firebaseItems = tempItems;
           categories = tempCategories;
-          displayedItems = firebaseItems + sqliteItems;
+          displayedItems = firebaseItems + sqliteItems; // Combine Firebase and SQLite items
           isLoading = false;
         });
       } else {
@@ -96,14 +97,12 @@ class _SearchbarState extends State<Searchbar> {
     }
   }
 
-
   void updateSearchQuery(String value) {
     setState(() {
       searchQuery = value;
       filterItems();
     });
   }
-
 
   void filterItems() {
     if (searchQuery.isNotEmpty) {
@@ -118,7 +117,6 @@ class _SearchbarState extends State<Searchbar> {
       });
     }
   }
-
 
   void showItemsUnderCategory(Category category) {
     Navigator.push(
@@ -218,62 +216,66 @@ class _SearchbarState extends State<Searchbar> {
                   itemCount: displayedItems.length,
                   itemBuilder: (context, index) {
                     var item = displayedItems[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.all(10),
-                        title: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.item_name!,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: null,
-                              ),
-                            ),
-                            if (item.item_price != null)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    "₱${item.item_price}",
-                                    style: TextStyle(
-                                      color: Colors.teal.shade900,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (item.item_cost != null && item.item_cost != "n/a")
-                                    Text(
-                                      "Market Price: ₱${item.item_cost}",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  // If no Market Price
-                                  if (item.item_cost == null || item.item_cost == "n/a")
-                                    Text(
-                                      "Market Price: n/a",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                          ],
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context, item);
+                      },
+                      child: Card(
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      )
+                        child: ListTile(
+                          contentPadding: EdgeInsets.all(10),
+                          title: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.item_name!,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: null,
+                                ),
+                              ),
+                              if (item.item_price != null)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      "₱${item.item_price}",
+                                      style: TextStyle(
+                                        color: Colors.teal.shade900,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (item.item_cost != null && item.item_cost != "n/a")
+                                      Text(
+                                        "Market Price: ₱${item.item_cost}",
+                                        style: TextStyle(
+                                          color: Colors.teal.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    if (item.item_cost == null || item.item_cost == "n/a")
+                                      Text(
+                                        "Market Price: n/a",
+                                        style: TextStyle(
+                                          color: Colors.teal.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -319,59 +321,64 @@ class CategoryItemsPage extends StatelessWidget {
           itemCount: category.items.length,
           itemBuilder: (context, index) {
             var item = category.items[index];
-            return Card(
-              margin: EdgeInsets.symmetric(vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(10),
-                title: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
+            return GestureDetector(
+              onTap: () {
+                Navigator.pop(context, item);
+              },
+              child: Card(
+                margin: EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(10),
+                  title: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
                         child: Text(
-                        item.item_name!,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                          item.item_name!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                           maxLines: null,
+                        ),
                       ),
-                    ),
-                    if (item.item_price != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                          Text(
-                            "₱${item.item_price}",
-                            style: TextStyle(
-                              color: Colors.teal.shade900,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                      if (item.item_price != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              "₱${item.item_price}",
+                              style: TextStyle(
+                                color: Colors.teal.shade900,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        if (item.item_cost != null && item.item_cost != "n/a")
-                          Text(
-                            "Market Price: ₱${item.item_cost}",
-                            style: TextStyle(
-                              color: Colors.teal.shade700,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        if (item.item_cost == null || item.item_cost == "n/a")
-                          Text(
-                            "Market Price: n/a",
-                            style: TextStyle(
-                              color: Colors.teal.shade700,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+                            if (item.item_cost != null && item.item_cost != "n/a")
+                              Text(
+                                "Market Price: ₱${item.item_cost}",
+                                style: TextStyle(
+                                  color: Colors.teal.shade700,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            if (item.item_cost == null || item.item_cost == "n/a")
+                              Text(
+                                "Market Price: n/a",
+                                style: TextStyle(
+                                  color: Colors.teal.shade700,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -381,4 +388,5 @@ class CategoryItemsPage extends StatelessWidget {
     );
   }
 }
+
 
