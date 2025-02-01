@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
                 final prefs = await SharedPreferences.getInstance();
                 String key = '${DateFormat('yyyy-MM-dd').format(
                     item.date)}_budget';
-                double budget = item.budget;
+                double budget = item.budget;  
                 double? currentBudget = prefs.getDouble(key);
 
                 if (currentBudget != null) {
