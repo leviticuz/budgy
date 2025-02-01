@@ -30,7 +30,7 @@ class CreateTab extends StatefulWidget {
 class _CreateTabState extends State<CreateTab> {
   double totalBudget = 0.0;
   double totalSpending = 0.0;
-  List<Map<String, double>> monthlyData = [];
+  bool _isWeekly = false; // Toggle bool
 
   @override
   void initState() {
@@ -38,7 +38,6 @@ class _CreateTabState extends State<CreateTab> {
     if (!widget.isNewList) {
       _loadData();
     } else {
-      // Clear only when the list is new and the widget is initialized
       widget.titleController.clear();
       widget.budgetController.clear();
     }
@@ -62,9 +61,7 @@ class _CreateTabState extends State<CreateTab> {
           : AppBar(
         title: Text('Edit List'),
         backgroundColor: Color(0xFF5BB7A6),
-        actions: widget.isNewList
-            ? null
-            : [
+        actions: [
           IconButton(
             icon: Icon(Icons.check),
             onPressed: () async {
@@ -89,7 +86,7 @@ class _CreateTabState extends State<CreateTab> {
                 creationDate: DateTime.now(),
               );
 
-              Navigator.pop(context, updatedItem); // Return the updated item
+              Navigator.pop(context, updatedItem);
             },
           ),
         ],
@@ -107,6 +104,7 @@ class _CreateTabState extends State<CreateTab> {
                 ),
                 child: Column(
                   children: [
+                    // Title Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -129,6 +127,7 @@ class _CreateTabState extends State<CreateTab> {
                         ),
                       ),
                     ),
+
                     // Date Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
@@ -156,8 +155,7 @@ class _CreateTabState extends State<CreateTab> {
                               readOnly: true,
                               style: widget.isNewList
                                   ? TextStyle(color: Colors.black)
-                                  : TextStyle(color: Colors
-                                  .grey), // Gray out date if editing
+                                  : TextStyle(color: Colors.grey),
                             ),
                           ),
                           if (widget.isNewList)
@@ -182,6 +180,43 @@ class _CreateTabState extends State<CreateTab> {
                         ],
                       ),
                     ),
+
+                    // Toggle Switch for Weekly
+                    Container(
+                      margin: EdgeInsets.only(bottom: 19),
+                      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _isWeekly ? "Repeat weekly" : "Never repeat",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Switch(
+                            value: _isWeekly,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _isWeekly = value;
+                              });
+                            },
+                            activeColor: Colors.teal,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Budget Input Field
                     Container(
                       margin: EdgeInsets.only(bottom: 19),
                       padding: EdgeInsets.all(12.0),
@@ -205,11 +240,9 @@ class _CreateTabState extends State<CreateTab> {
                               labelText: 'Budget (₱)',
                               border: InputBorder.none,
                             ),
-                            keyboardType: TextInputType.numberWithOptions(
-                                decimal: true),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d*\.?\d{0,2}'))
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
                             ],
                           ),
                           Text(
@@ -222,12 +255,12 @@ class _CreateTabState extends State<CreateTab> {
                         ],
                       ),
                     ),
+
                     // Predefined Budget Buttons
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [100, 500, 1000, 5000, 8000, 10000].map((
-                          price) {
+                      children: [100, 500, 1000, 5000, 8000, 10000].map((price) {
                         return GestureDetector(
                           onTap: () {
                             widget.budgetController.text = price.toString();
