@@ -7,12 +7,47 @@ class HomeTab extends StatelessWidget {
   final List<Item> itemList;
   final Function(Item) onDelete;
   final Function(Item) onEdit;
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   HomeTab({required this.itemList, required this.onDelete, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Color(0xFFB1E8DE),
+        body: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              child: TabBar(
+                indicatorColor: Colors.teal,
+                labelColor: Colors.teal,
+                unselectedLabelColor: Colors.grey,
+                tabs: [
+                  Tab(text: 'Normal lng'),
+                  Tab(text: 'Recurring'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Normal list
+                  _buildItemList(itemList),
+
+                  // Recurring list (using the same list for now)
+                  _buildItemList(itemList),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemList(List<Item> itemList) {
     return Stack(
       children: [
         Center(
@@ -25,7 +60,6 @@ class HomeTab extends StatelessWidget {
         ),
         // List of items
         AnimatedList(
-          key: _listKey,
           padding: EdgeInsets.all(16),
           initialItemCount: itemList.length,
           itemBuilder: (context, index, animation) {
