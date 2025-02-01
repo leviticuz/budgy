@@ -38,13 +38,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
-    final itemListJson = jsonEncode(_itemList.map((item) => item.toJson()).toList());
+    final itemListJson = jsonEncode(
+        _itemList.map((item) => item.toJson()).toList());
     prefs.setString('itemList', itemListJson);
   }
 
   void _updateItemInList(Item updatedItem) {
     setState(() {
-      final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
+      final index = _itemList.indexWhere((item) =>
+      item.title == updatedItem.title);
       if (index != -1) {
         _itemList[index] = updatedItem;
       }
@@ -53,42 +55,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   double _calculateTotalCost() {
-    return widget.item.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    return widget.item.items.fold(
+        0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   void _navigateToAddItemScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddItemScreen(
-          onAddItem: (String itemName, double itemPrice, int quantity) {
-            setState(() {
-              bool itemExists = false;
-              for (var existingItem in widget.item.items) {
-                if (existingItem.name == itemName) {
-                  existingItem.quantity += quantity;
-                  itemExists = true;
-                  break;
-                }
-              }
-              if (!itemExists) {
-                widget.item.items.add(
-                  ItemDetail(
-                    name: itemName,
-                    quantity: quantity,
-                    isChecked: false,
-                    price: itemPrice,
-                  ),
-                );
-              }
-              _updateItemInList(widget.item);
-              _updateFrequentlyBoughtItems(itemName);
-              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
-            });
-          },
-          budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(),
-        ),
+        builder: (context) =>
+            AddItemScreen(
+              onAddItem: (String itemName, double itemPrice, int quantity) {
+                setState(() {
+                  bool itemExists = false;
+                  for (var existingItem in widget.item.items) {
+                    if (existingItem.name == itemName) {
+                      existingItem.quantity += quantity;
+                      itemExists = true;
+                      break;
+                    }
+                  }
+                  if (!itemExists) {
+                    widget.item.items.add(
+                      ItemDetail(
+                        name: itemName,
+                        quantity: quantity,
+                        isChecked: false,
+                        price: itemPrice,
+                      ),
+                    );
+                  }
+                  _updateItemInList(widget.item);
+                  _updateFrequentlyBoughtItems(itemName);
+                  _saveSpendingForMonth(
+                      _calculateTotalCost(), widget.item.date);
+                });
+              },
+              budget: widget.item.budget,
+              currentTotalCost: _calculateTotalCost(),
+            ),
       ),
     );
   }
@@ -166,11 +171,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
       );
     }
 
-    frequentlyBoughtItems[itemName] = (frequentlyBoughtItems[itemName] ?? 0) + 1;
+    frequentlyBoughtItems[itemName] =
+        (frequentlyBoughtItems[itemName] ?? 0) + 1;
 
-    String monthKey = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}";
+    String monthKey = "${DateTime
+        .now()
+        .year}-${DateTime
+        .now()
+        .month
+        .toString()
+        .padLeft(2, '0')}";
     monthlyPurchases[monthKey] = monthlyPurchases[monthKey] ?? {};
-    monthlyPurchases[monthKey]![itemName] = (monthlyPurchases[monthKey]![itemName] ?? 0) + 1;
+    monthlyPurchases[monthKey]![itemName] =
+        (monthlyPurchases[monthKey]![itemName] ?? 0) + 1;
 
     prefs.setString('frequentlyBoughtItems', jsonEncode(frequentlyBoughtItems));
     prefs.setString('monthlyPurchases', jsonEncode(monthlyPurchases));
@@ -181,32 +194,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddItemScreen(
-          onAddItem: (String newName, double newPrice, int newQuantity) {
-            setState(() {
-              widget.item.items[index] = ItemDetail(
-                name: newName,
-                price: newPrice,
-                quantity: newQuantity,
-                isChecked: product.isChecked,
-              );
-              _updateItemInList(widget.item);
-              _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
-            });
-          },
-          initialName: product.name,
-          initialPrice: product.price,
-          initialQuantity: product.quantity,
-          budget: widget.item.budget,
-          currentTotalCost: _calculateTotalCost(),
-        ),
+        builder: (context) =>
+            AddItemScreen(
+              onAddItem: (String newName, double newPrice, int newQuantity) {
+                setState(() {
+                  widget.item.items[index] = ItemDetail(
+                    name: newName,
+                    price: newPrice,
+                    quantity: newQuantity,
+                    isChecked: product.isChecked,
+                  );
+                  _updateItemInList(widget.item);
+                  _saveSpendingForMonth(
+                      _calculateTotalCost(), widget.item.date);
+                });
+              },
+              initialName: product.name,
+              initialPrice: product.price,
+              initialQuantity: product.quantity,
+              budget: widget.item.budget,
+              currentTotalCost: _calculateTotalCost(),
+            ),
       ),
     );
   }
-  Future<void> _saveSpendingForMonth(double spending, DateTime selectedDate) async {
+
+  Future<void> _saveSpendingForMonth(double spending,
+      DateTime selectedDate) async {
     final prefs = await SharedPreferences.getInstance();
-    String monthKey = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
-    double currentMonthSpending = prefs.getDouble(monthKey + "_spending") ?? 0.0;
+    String monthKey = "${selectedDate.year}-${selectedDate.month.toString()
+        .padLeft(2, '0')}";
+    double currentMonthSpending = prefs.getDouble(monthKey + "_spending") ??
+        0.0;
     currentMonthSpending += spending;
     await prefs.setDouble(monthKey + "_spending", currentMonthSpending);
   }
@@ -224,19 +243,42 @@ class _ProductListScreenState extends State<ProductListScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline),
-            onPressed:(){ /*_navigateToAddItemScreen*/Navigator.push(
-              context,
+            onPressed: () {
+              Navigator.push(
+                context,
                 MaterialPageRoute(builder: (context) => Searchbar()),
-            );
-          },
+              );
+            },
           ),
         ],
       ),
-      body: Container(
+      body: widget.item.items.isEmpty
+          ? GestureDetector(
+        onTap:  () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => Searchbar()),
+          );
+        },
+        child: Container(
+          color: Color(0xFFB1E8DE),
+          child: Center(
+            child: Text(
+              "Your list is empty. Tap anywhere to add an item.",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      )
+          : Container(
         color: Color(0xFFB1E8DE),
         child: Column(
           children: [
-            Text("Note: Slide to Delete",style: TextStyle(color: Colors.grey),),
+            Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),
@@ -266,7 +308,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ),
                     child: Card(
                       margin: EdgeInsets.symmetric(vertical: 8),
-                      color: product.isChecked ? Colors.grey.shade200 : Colors.white,
+                      color: product.isChecked ? Colors.grey.shade200 : Colors
+                          .white,
                       child: ListTile(
                         leading: Checkbox(
                           value: product.isChecked,
@@ -293,9 +336,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Price: ₱${product.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 12)),
+                            Text('Price: ₱${product.price.toStringAsFixed(2)}',
+                                style: TextStyle(fontSize: 12)),
                             Text(
-                              'Cost: ₱${(product.price * product.quantity).toStringAsFixed(2)}',
+                              'Cost: ₱${(product.price * product.quantity)
+                                  .toStringAsFixed(2)}',
                               style: TextStyle(color: Colors.black54),
                             ),
                           ],
@@ -318,7 +363,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     widget.item.items.removeAt(index);
                                   });
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("${product.name} deleted")),
+                                    SnackBar(content: Text(
+                                        "${product.name} deleted")),
                                   );
                                 }
                               },
@@ -328,7 +374,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     value: 'edit',
                                     height: 30,
                                     child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 2, horizontal: 8),
                                       child: Text(
                                         'Edit',
                                         style: TextStyle(fontSize: 12),
@@ -339,10 +386,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     value: 'delete',
                                     height: 30,
                                     child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 2, horizontal: 8),
                                       child: Text(
                                         'Delete',
-                                        style: TextStyle(fontSize: 12,color: Color(0xFFb8181e)),
+                                        style: TextStyle(fontSize: 12,
+                                            color: Color(0xFFb8181e)),
                                       ),
                                     ),
                                   ),
@@ -363,7 +412,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                  Text('Budget: ₱${widget.item.budget.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 16)),
                   Container(
                     decoration: BoxDecoration(
                       color: isOverBudget ? Colors.red : Colors.teal.shade100,
@@ -382,7 +432,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ],
               ),
             ),
-
           ],
         ),
       ),
