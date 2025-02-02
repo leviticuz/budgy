@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   DateTime? _lastPressedTime;
   Map<String, int> frequentlyBoughtItems = {};
+  bool _isWeekly = false;
 
   @override
   void initState() {
@@ -51,7 +52,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _addItemToList(String title, double budget, DateTime date) async {
+  void _addItemToList(String title, double budget, DateTime date, bool isWeekly) async {
     await SharedPrefsHelper.saveBudget(budget, date);
 
     setState(() {
@@ -62,6 +63,7 @@ class _HomePageState extends State<HomePage> {
         items: [],
         selectedDate: DateTime.now(),
         creationDate: DateTime.now(),
+        weekly: isWeekly, // Pass isWeekly
       ));
       _saveItems();
       _selectedIndex = 0;
@@ -143,6 +145,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() => item.date = pickedDate),
               onSelectDate: () => _selectDate(context),
               isNewList: false,
+              isWeekly: item.weekly,
             ),
       ),
     );
@@ -260,7 +263,7 @@ class _HomePageState extends State<HomePage> {
     final confirm = await _confirmDateBeforeCreate(context);
     if (!confirm) return;
 
-    _addItemToList(_titleController.text, budget, _selectedDate);
+    _addItemToList(_titleController.text, budget, _selectedDate, _isWeekly);
   }
 
   Widget _currentPage() {
@@ -278,6 +281,7 @@ class _HomePageState extends State<HomePage> {
               setState(() => _selectedDate = pickedDate),
           onSelectDate: () => _selectDate(context),
           isNewList: true,
+          isWeekly: _isWeekly,
         );
       case 2:
         return Seachbarout();

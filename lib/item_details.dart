@@ -5,6 +5,7 @@ class Item {
   List<ItemDetail> items;
   DateTime selectedDate;
   DateTime creationDate;
+  bool weekly;
 
   Item({
     required this.title,
@@ -13,6 +14,7 @@ class Item {
     required this.items,
     required this.selectedDate,
     required this.creationDate,
+    required this.weekly,
   });
 
   Map<String, dynamic> toJson() {
@@ -22,6 +24,7 @@ class Item {
       'date': date.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
       'creationdate': creationDate.toIso8601String(),
+      'weekly': weekly, // Add this
     };
   }
 
@@ -35,6 +38,7 @@ class Item {
           .toList(),
       selectedDate: DateTime.now(),
       creationDate: DateTime.parse(json['creationdate']),
+      weekly: json['weekly'] ?? false, // Default to false if missing
     );
   }
 }

@@ -272,6 +272,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         },
         child: Container(
           color: Color(0xFFB1E8DE),
+          padding: EdgeInsets.all(16.0),
           child: Center(
             child: Text(
               "Your list is empty. Tap anywhere to add an item.",

@@ -192,14 +192,30 @@ class _SearchbarState extends State<Searchbar> {
                         child: Container(
                           alignment: Alignment.center,
                           padding: EdgeInsets.all(10),
-                          child: Text(
+                          child: category.name!.contains(" ") // Check if multi-word
+                              ? Text(
                             category.name!,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 12,
                               color: Colors.teal.shade900,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 3, // Wrap multi-word text
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
+                          )
+                              : FittedBox(
+                            fit: BoxFit.scaleDown, // Shrink long words
+                            child: Text(
+                              category.name!,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.teal.shade900,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
                       ),

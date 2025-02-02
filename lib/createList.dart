@@ -12,6 +12,7 @@ class CreateTab extends StatefulWidget {
   final Function(DateTime) onDatePicked;
   final VoidCallback onSelectDate;
   final bool isNewList;
+  final bool isWeekly;
 
   CreateTab({
     required this.titleController,
@@ -21,6 +22,7 @@ class CreateTab extends StatefulWidget {
     required this.onDatePicked,
     required this.onSelectDate,
     required this.isNewList,
+    required this.isWeekly,
   });
 
   @override
@@ -35,6 +37,7 @@ class _CreateTabState extends State<CreateTab> {
   @override
   void initState() {
     super.initState();
+    _isWeekly = widget.isWeekly;
     if (!widget.isNewList) {
       _loadData();
     } else {
@@ -84,6 +87,7 @@ class _CreateTabState extends State<CreateTab> {
                 items: [],
                 selectedDate: DateTime.now(),
                 creationDate: DateTime.now(),
+                weekly: _isWeekly,
               );
 
               Navigator.pop(context, updatedItem);
@@ -201,16 +205,30 @@ class _CreateTabState extends State<CreateTab> {
                         children: [
                           Text(
                             _isWeekly ? "Repeat weekly" : "Never repeat",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: widget.isNewList ? Colors.black : Colors.grey, // Make text gray if read-only
+                            ),
                           ),
-                          Switch(
-                            value: _isWeekly,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _isWeekly = value;
-                              });
-                            },
-                            activeColor: Colors.teal,
+                          IgnorePointer(
+                            ignoring: !widget.isNewList, // Disable switch if it's not a new list
+                            child: Opacity(
+                              opacity: widget.isNewList ? 1.0 : 0.5, // Reduce opacity when disabled
+                              child: Switch(
+                                value: _isWeekly,
+                                onChanged: (bool value) {
+                                  setState(() {
+                                    _isWeekly = value;
+                                  });
+                                },
+                                activeColor: widget.isNewList ? Colors.teal : Colors.grey, // Gray color when disabled
+                                trackColor: WidgetStateProperty.resolveWith<Color>(
+                                      (Set<WidgetState> states) {
+                                    return widget.isNewList ? Colors.teal.withOpacity(0.5) : Colors.grey;
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),

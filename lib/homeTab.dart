@@ -12,6 +12,10 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Separate lists based on 'weekly' value
+    final List<Item> scheduledItems = itemList.where((item) => !item.weekly).toList();
+    final List<Item> recurringItems = itemList.where((item) => item.weekly).toList();
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -25,7 +29,7 @@ class HomeTab extends StatelessWidget {
                 labelColor: Colors.teal,
                 unselectedLabelColor: Colors.grey,
                 tabs: [
-                  Tab(text: 'Normal lng'),
+                  Tab(text: 'Scheduled'),
                   Tab(text: 'Recurring'),
                 ],
               ),
@@ -33,11 +37,10 @@ class HomeTab extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  // Normal list
-                  _buildItemList(itemList),
-
-                  // Recurring list (using the same list for now)
-                  _buildItemList(itemList),
+                  // Scheduled items
+                  _buildItemList(scheduledItems),
+                  // Recurring items
+                  _buildItemList(recurringItems),
                 ],
               ),
             ),
@@ -48,6 +51,15 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _buildItemList(List<Item> itemList) {
+    if (itemList.isEmpty) {
+      return Center(
+        child: Text(
+          "No items available",
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         Center(
@@ -58,12 +70,11 @@ class HomeTab extends StatelessWidget {
             ),
           ),
         ),
-        // List of items
-        AnimatedList(
+        ListView.builder(
           padding: EdgeInsets.all(16),
-          initialItemCount: itemList.length,
-          itemBuilder: (context, index, animation) {
-            final item = itemList[itemList.length - 1 - index];
+          itemCount: itemList.length,
+          itemBuilder: (context, index) {
+            final item = itemList[itemList.length - 1 - index]; // Reverse order
             return Dismissible(
               key: Key(item.title),
               direction: DismissDirection.endToStart,
@@ -145,3 +156,4 @@ class HomeTab extends StatelessWidget {
     );
   }
 }
+
