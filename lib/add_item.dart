@@ -169,8 +169,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
         centerTitle: true,
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () async {
+            icon: Icon(Icons.search), onPressed: () {  },
+           /* onPressed: () async {
               final selectedItem = await Navigator.push<Item>(
                 context,
                 MaterialPageRoute(
@@ -189,7 +189,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   _quantityController.text = '1';
                 });
               }
-            },
+            },*/
           ),
         ],
       ),

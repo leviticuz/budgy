@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'package:Budgy/user_db.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dummyItems.dart';
 import 'package:Budgy/EditItemScreen.dart';
 
 class Searchbar extends StatefulWidget {
-  const Searchbar({super.key});
+  final Function(String, double, int) onItemSelected;
+
+  Searchbar({required this.onItemSelected, Key? key}) : super(key: key);
 
   @override
   State<Searchbar> createState() => _SearchbarState();
@@ -20,7 +23,8 @@ class _SearchbarState extends State<Searchbar> {
   bool isLoading = true;
   bool networkError = false;
   String searchQuery = '';
-
+  Map<String, int> onItemSelected = {};
+  Timer? _toastTimer;
   @override
   void initState() {
     super.initState();
@@ -105,24 +109,25 @@ class _SearchbarState extends State<Searchbar> {
   }
 
   void filterItems() {
+    List<Item> allItems = firebaseItems + sqliteItems; // Use a separate list to avoid modifying the original data
     if (searchQuery.isNotEmpty) {
+      List<Item> filtered = allItems.where((item) {
+        return item.item_name!.toLowerCase().startsWith(searchQuery.toLowerCase());
+      }).toList();
       setState(() {
-        displayedItems = displayedItems.where((item) {
-          return item.item_name!.toLowerCase().startsWith(searchQuery.toLowerCase());
-        }).toList();
+        displayedItems = filtered;
       });
     } else {
       setState(() {
-        displayedItems = firebaseItems + sqliteItems;
+        displayedItems = allItems;
       });
     }
   }
-
   void showItemsUnderCategory(Category category) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryItemsPage(category: category),
+        builder: (context) => CategoryItemsPage(category: category, onItemSelected: (String , double , int ) {  },),
       ),
     );
   }
@@ -201,12 +206,12 @@ class _SearchbarState extends State<Searchbar> {
                               color: Colors.teal.shade900,
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 3, // Wrap multi-word text
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
                           )
                               : FittedBox(
-                            fit: BoxFit.scaleDown, // Shrink long words
+                            fit: BoxFit.scaleDown,
                             child: Text(
                               category.name!,
                               style: TextStyle(
@@ -234,7 +239,20 @@ class _SearchbarState extends State<Searchbar> {
                     var item = displayedItems[index];
                     return GestureDetector(
                       onTap: () {
-                        Navigator.pop(context, item);
+                        widget.onItemSelected(item.item_name ?? "Unknown", item.item_price ?? 0.0, 1);
+
+                        _toastTimer?.cancel();
+                        _toastTimer = Timer(Duration(milliseconds: 300), () {
+                          Fluttertoast.cancel();
+                          Fluttertoast.showToast(
+                            msg: "${item.item_name} added to the list!",
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                            backgroundColor: Colors.black,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                        });
                       },
                       child: Card(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -312,10 +330,24 @@ class Category {
   Category({this.name, required this.items});
 }
 
-class CategoryItemsPage extends StatelessWidget {
+class CategoryItemsPage extends StatefulWidget {
   final Category category;
+  final Function(String, double, int) onItemSelected;
 
-  CategoryItemsPage({required this.category});
+  CategoryItemsPage({required this.category, required this.onItemSelected});
+
+  @override
+  _CategoryItemsPageState createState() => _CategoryItemsPageState();
+}
+
+class _CategoryItemsPageState extends State<CategoryItemsPage> {
+  Timer? _toastTimer;
+
+  @override
+  void dispose() {
+    _toastTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -323,7 +355,7 @@ class CategoryItemsPage extends StatelessWidget {
       backgroundColor: Color(0xFFB1E8DE),
       appBar: AppBar(
         backgroundColor: Color(0xFFB1E8DE),
-        title: Text(category.name!),
+        title: Text(widget.category.name!),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -334,12 +366,26 @@ class CategoryItemsPage extends StatelessWidget {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: ListView.builder(
-          itemCount: category.items.length,
+          itemCount: widget.category.items.length,
           itemBuilder: (context, index) {
-            var item = category.items[index];
+            var item = widget.category.items[index];
+
             return GestureDetector(
               onTap: () {
-                Navigator.pop(context, item);
+                widget.onItemSelected(item.item_name ?? "Unknown", item.item_price ?? 0.0, 1);
+
+                _toastTimer?.cancel();
+                _toastTimer = Timer(Duration(milliseconds: 300), () {
+                  Fluttertoast.cancel();
+                  Fluttertoast.showToast(
+                    msg: "${item.item_name} added to the list!",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.black,
+                    textColor: Colors.white,
+                    fontSize: 16.0,
+                  );
+                });
               },
               child: Card(
                 margin: EdgeInsets.symmetric(vertical: 8),
@@ -404,5 +450,6 @@ class CategoryItemsPage extends StatelessWidget {
     );
   }
 }
+
 
 

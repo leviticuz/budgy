@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
           content: Text(
               "Are you sure you want to permanently delete this list?"),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop(false);
                 setState(() {
@@ -88,7 +88,7 @@ class _HomePageState extends State<HomePage> {
               },
               child: Text("Cancel"),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
                 String key = '${DateFormat('yyyy-MM-dd').format(

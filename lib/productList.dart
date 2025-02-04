@@ -1,15 +1,14 @@
-
 import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'add_item.dart';
 import 'item_details.dart';
 import 'searchBarIn.dart';
 
+
 class ProductListScreen extends StatefulWidget {
   final Item item;
-
-
 
   ProductListScreen({required this.item});
 
@@ -62,7 +61,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
-  void _navigateToAddItemScreen() {
+  /*void _navigateToAddItemScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -99,7 +98,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ),
       ),
     );
+  }*/
+
+  void _addItemToList(String itemName, double itemPrice, int quantity) {
+    setState(() {
+      bool itemExists = false;
+
+      for (var existingItem in widget.item.items) {
+        if (existingItem.name == itemName) {
+          existingItem.quantity += quantity;
+          itemExists = true;
+          break;
+        }
+      }
+
+      if (!itemExists) {
+        widget.item.items.add(
+          ItemDetail(
+            name: itemName,
+            quantity: quantity,
+            isChecked: false,
+            price: itemPrice,
+          ),
+        );
+      }
+
+      _updateItemInList(widget.item);
+      _updateFrequentlyBoughtItems(itemName);
+      _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
+
+      /*Fluttertoast.showToast(
+        msg: itemExists ? "$itemName quantity updated!" : "$itemName added to the list!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+      );*/
+    });
   }
+
 
   void _showConfirmPriceDialog(ItemDetail product, int index) {
     final TextEditingController priceController = TextEditingController();
@@ -240,6 +277,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }
     });
   }
+
+  void _deleteSelectedItems() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Deletion"),
+          content: Text("Are you sure you want to delete all selected items?"),
+          actions: [
+            ElevatedButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            ElevatedButton(
+              child: Text("Delete",style: TextStyle(color: Color(0xFFb8181e)),),
+              onPressed: () {
+                setState(() {
+                  widget.item.items.removeWhere((item) => item.isChecked);
+                  _selectAll = false;
+                });
+                _updateItemInList(widget.item);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalCost = _calculateTotalCost();
@@ -256,7 +325,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => Searchbar()),
+                MaterialPageRoute( builder: (context) =>  Searchbar(onItemSelected: _addItemToList)),
               );
             },
           ),
@@ -267,8 +336,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
         onTap:  () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Searchbar()),
-          );
+            MaterialPageRoute(builder: (context) => Searchbar(onItemSelected: _addItemToList)),
+            );
         },
         child: Container(
           color: Color(0xFFB1E8DE),
@@ -290,12 +359,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Checkbox(
-                  value: _selectAll,
-                  onChanged: _toggleSelectAll,
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _selectAll,
+                      onChanged: _toggleSelectAll,
+                    ),
+                    Text("Select All Items"),
+                  ],
                 ),
-                Text("Select All Items"),
+                if (_selectAll)
+                  TextButton(
+                    onPressed: _deleteSelectedItems,
+                    child: Text(
+                      "Delete All",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
               ],
             ),
             Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
