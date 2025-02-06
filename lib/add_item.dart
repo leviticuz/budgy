@@ -174,7 +174,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               final selectedItem = await Navigator.push<Item>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const Searchbar(),
+                  builder: (context) => const Searchbar(listTitle: ""),
                 ),
               );
 

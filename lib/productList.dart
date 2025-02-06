@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +7,6 @@ import 'searchBarIn.dart';
 
 class ProductListScreen extends StatefulWidget {
   final Item item;
-
-
 
   ProductListScreen({required this.item});
 
@@ -29,15 +26,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> _loadItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = prefs.getString('itemList');
+
     if (itemListJson != null) {
       final List<dynamic> decoded = jsonDecode(itemListJson);
+
       setState(() {
-        _itemList = decoded.map((json) => Item.fromJson(json)).toList();
+        var matchedItem = decoded.firstWhere(
+              (json) => json['title'] == widget.item.title,
+          orElse: () => null,
+        );
+
+        if (matchedItem != null) {
+          // Directly update widget.item.items instead of using a separate list
+          widget.item.items = List<ItemDetail>.from(
+            matchedItem['items'].map((jsonItem) => ItemDetail.fromJson(jsonItem)),
+          );
+        } else {
+          widget.item.items = [];
+        }
       });
     } else {
-      _itemList = [];
+      setState(() {
+        widget.item.items = [];
+      });
     }
   }
+
+
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
@@ -48,12 +63,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _updateItemInList(Item updatedItem) {
     setState(() {
-      final index = _itemList.indexWhere((item) =>
-      item.title == updatedItem.title);
+      final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
       if (index != -1) {
         _itemList[index] = updatedItem;
+      } else {
+        _itemList.add(updatedItem);
       }
-      _saveItems();
+      _saveItems(); // Save updated list
     });
   }
 
@@ -232,6 +248,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
     currentMonthSpending += spending;
     await prefs.setDouble(monthKey + "_spending", currentMonthSpending);
   }
+  void _navigateToSearchBar(String listTitle) async {
+    // Navigate to the Searchbar screen and pass listTitle as an argument
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Searchbar(listTitle: listTitle),  // Pass listTitle here
+      ),
+    );
+
+    // After returning from Searchbar screen, reload the items and rebuild the widget
+    setState(() {
+      print('working...');
+      _loadItems(); // This should trigger a rebuild of the widget and update the UI
+    });
+  }
+
+
+
+
+
   void _toggleSelectAll(bool? value) {
     setState(() {
       _selectAll = value ?? false;
@@ -253,22 +289,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Searchbar()),
-              );
-            },
+            onPressed: () async => _navigateToSearchBar(widget.item.title),
           ),
         ],
       ),
       body: widget.item.items.isEmpty
           ? GestureDetector(
-        onTap:  () {
-          Navigator.push(
+        onTap:  () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Searchbar()),
+            MaterialPageRoute(
+              builder: (context) => Searchbar(listTitle: widget.item.title),  // Pass listTitle here
+            ),
           );
+          _loadItems();
         },
         child: Container(
           color: Color(0xFFB1E8DE),

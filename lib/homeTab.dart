@@ -1,14 +1,42 @@
+import 'package:Budgy/list.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'productList.dart';
 import 'item_details.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-class HomeTab extends StatelessWidget {
-  final List<Item> itemList;
+class HomeTab extends StatefulWidget {
   final Function(Item) onDelete;
   final Function(Item) onEdit;
 
-  HomeTab({required this.itemList, required this.onDelete, required this.onEdit});
+  HomeTab({required this.onDelete, required this.onEdit});
+
+  @override
+  _HomeTabState createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  late List<Item> itemList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItemList();
+  }
+
+  // Load items from SharedPreferences
+  Future<void> _loadItemList() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? itemListJson = prefs.getString('itemList');
+
+    if (itemListJson != null) {
+      List<dynamic> decodedList = jsonDecode(itemListJson);
+      setState(() {
+        itemList = decodedList.map((json) => Item.fromJson(json)).toList();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +74,19 @@ class HomeTab extends StatelessWidget {
             ),
           ],
         ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.teal,
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CustomUIPage()),
+            );
+            // Refresh the list once you return from CustomUIPage
+            _loadItemList();  // Call _loadItemList() after returning
+          },
+          child: Icon(Icons.add, color: Colors.white),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Positioned at bottom-left
       ),
     );
   }
@@ -79,7 +120,7 @@ class HomeTab extends StatelessWidget {
               key: Key(item.title),
               direction: DismissDirection.endToStart,
               onDismissed: (direction) {
-                onDelete(item);
+                widget.onDelete(item); // Calls the onDelete function
               },
               background: Container(
                 margin: EdgeInsets.symmetric(vertical: 8),
@@ -107,9 +148,9 @@ class HomeTab extends StatelessWidget {
                     offset: Offset(0, 30),
                     onSelected: (value) {
                       if (value == 'edit') {
-                        onEdit(item);
+                        widget.onEdit(item); // Calls the onEdit function
                       } else if (value == 'delete') {
-                        onDelete(item);
+                        widget.onDelete(item); // Calls the onDelete function
                       }
                     },
                     itemBuilder: (BuildContext context) {
@@ -156,4 +197,3 @@ class HomeTab extends StatelessWidget {
     );
   }
 }
-

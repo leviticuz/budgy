@@ -3,10 +3,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'package:Budgy/user_db.dart';
 import 'dummyItems.dart';
+import 'item_helper.dart';
 import 'package:Budgy/EditItemScreen.dart';
 
 class Searchbar extends StatefulWidget {
-  const Searchbar({super.key});
+  final String listTitle;
+
+  const Searchbar({required this.listTitle, Key? key}) : super(key: key);
 
   @override
   State<Searchbar> createState() => _SearchbarState();
@@ -20,6 +23,7 @@ class _SearchbarState extends State<Searchbar> {
   bool isLoading = true;
   bool networkError = false;
   String searchQuery = '';
+
 
   @override
   void initState() {
@@ -122,7 +126,7 @@ class _SearchbarState extends State<Searchbar> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryItemsPage(category: category),
+        builder: (context) => CategoryItemsPage(category: category, listTitle: widget.listTitle,),
       ),
     );
   }
@@ -233,8 +237,22 @@ class _SearchbarState extends State<Searchbar> {
                   itemBuilder: (context, index) {
                     var item = displayedItems[index];
                     return GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context, item);
+                      onTap: () async {
+                        print('work please');
+                        double price = 0.0;
+
+                        // First, check if item.item_cost is neither null nor "n/a"
+                        if (item.item_cost != null && item.item_cost != "n/a") {
+                          // Safely parse item.item_cost to double
+                          price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
+                        } else {
+                          price = item.item_price ?? 0.0;  // Fallback value if item.item_cost is "n/a" or null
+                        }
+                        String name = item.item_name ?? "Unknown Item";
+                        print(name);
+                        print(price);
+                        await ItemHelper.addItem(widget.listTitle, name, price);
+                        Navigator.pop(context); // Go back to category screen
                       },
                       child: Card(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -310,12 +328,14 @@ class Category {
   final List<Item> items;
 
   Category({this.name, required this.items});
+
 }
 
 class CategoryItemsPage extends StatelessWidget {
   final Category category;
+  final String listTitle;
 
-  CategoryItemsPage({required this.category});
+  CategoryItemsPage({required this.category, required this.listTitle});
 
   @override
   Widget build(BuildContext context) {
@@ -338,8 +358,20 @@ class CategoryItemsPage extends StatelessWidget {
           itemBuilder: (context, index) {
             var item = category.items[index];
             return GestureDetector(
-              onTap: () {
-                Navigator.pop(context, item);
+              onTap: () async {
+                double price = 0.0;
+
+                // First, check if item.item_cost is neither null nor "n/a"
+                if (item.item_cost != null && item.item_cost != "n/a") {
+                  // Safely parse item.item_cost to double
+                  price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
+                } else {
+                  price = item.item_price ?? 0.0;
+                }
+                String name = item.item_name ?? "Unknown Item";
+
+                await ItemHelper.addItem(listTitle, name, price);
+                Navigator.pop(context); // Go back to category screen
               },
               child: Card(
                 margin: EdgeInsets.symmetric(vertical: 8),

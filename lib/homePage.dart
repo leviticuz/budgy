@@ -26,13 +26,14 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   DateTime? _lastPressedTime;
   Map<String, int> frequentlyBoughtItems = {};
-  bool _isWeekly = false;
+  late bool _isWeekly;
 
   @override
   void initState() {
     super.initState();
     _loadItems();
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    _isWeekly = false;
   }
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
@@ -54,7 +55,6 @@ class _HomePageState extends State<HomePage> {
 
   void _addItemToList(String title, double budget, DateTime date, bool isWeekly) async {
     await SharedPrefsHelper.saveBudget(budget, date);
-
     setState(() {
       itemList.add(Item(
         title: title,
@@ -63,7 +63,7 @@ class _HomePageState extends State<HomePage> {
         items: [],
         selectedDate: DateTime.now(),
         creationDate: DateTime.now(),
-        weekly: isWeekly, // Pass isWeekly
+        weekly: isWeekly,
       ));
       _saveItems();
       _selectedIndex = 0;
@@ -262,7 +262,6 @@ class _HomePageState extends State<HomePage> {
 
     final confirm = await _confirmDateBeforeCreate(context);
     if (!confirm) return;
-
     _addItemToList(_titleController.text, budget, _selectedDate, _isWeekly);
   }
 
@@ -270,7 +269,7 @@ class _HomePageState extends State<HomePage> {
     switch (_selectedIndex) {
       case 0:
         return HomeTab(
-            itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
+            onDelete: _deleteItem, onEdit: _editItem);
       case 1:
         return CreateTab(
           titleController: _titleController,
@@ -289,7 +288,7 @@ class _HomePageState extends State<HomePage> {
         return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems);
       default:
         return HomeTab(
-            itemList: itemList, onDelete: _deleteItem, onEdit: _editItem);
+            onDelete: _deleteItem, onEdit: _editItem);
     }
   }
 
