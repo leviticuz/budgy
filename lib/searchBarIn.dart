@@ -5,6 +5,8 @@ import 'package:Budgy/user_db.dart';
 import 'dummyItems.dart';
 import 'item_helper.dart';
 import 'package:Budgy/EditItemScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Searchbar extends StatefulWidget {
   final String listTitle;
@@ -23,12 +25,50 @@ class _SearchbarState extends State<Searchbar> {
   bool isLoading = true;
   bool networkError = false;
   String searchQuery = '';
+  double remainingBudget = 0.0;
+  double totalSpent = 0.0;
 
   @override
   void initState() {
     super.initState();
     fetchDataFromFirebase();
     fetchDataFromSQLite();
+    _getBudgetFromSharedPreferences();
+  }
+
+  void _getBudgetFromSharedPreferences() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? itemListJson = prefs.getString('itemList');
+
+    if (itemListJson != null) {
+      List<dynamic> itemList = jsonDecode(itemListJson);
+      var selectedList = itemList.firstWhere(
+            (list) => list['title'] == widget.listTitle,
+        orElse: () => null,
+      );
+
+      if (selectedList != null) {
+        double budget = selectedList['budget'] ?? 0.0;
+        List<dynamic> items = selectedList['items'] ?? [];
+
+        // Calculate total spent
+        totalSpent = items.fold(0.0, (sum, item) {
+          return sum + (item['price'] * item['quantity']);
+        });
+
+        setState(() {
+          remainingBudget = budget - totalSpent; // Remaining balance
+        });
+      }
+    }
+  }
+
+  // Function to update the remaining balance after adding an item
+  void updateRemainingBalance(double itemPrice, int quantity) {
+    setState(() {
+      totalSpent += itemPrice * quantity;
+      remainingBudget = remainingBudget - (itemPrice * quantity); // Calculate remaining balance
+    });
   }
 
   // Fetch data from Firebase
@@ -122,10 +162,15 @@ class _SearchbarState extends State<Searchbar> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryItemsPage(category: category, listTitle: widget.listTitle,),
+        builder: (context) => CategoryItemsPage(
+          category: category,
+          listTitle: widget.listTitle,
+          updateRemainingBalance: updateRemainingBalance,  // Pass the callback here
+        ),
       ),
     );
   }
+
 
   // Show modal to add item with quantity
   void _showAddItemModal(Item item) {
@@ -167,6 +212,16 @@ class _SearchbarState extends State<Searchbar> {
 
                 // Call addItem to add item to the list
                 await ItemHelper.addItem(widget.listTitle, name, price, quantity);
+
+                // Update remaining budget after adding the item
+                updateRemainingBalance(price, quantity);
+
+                // Reset the search bar and item list
+                setState(() {
+                  searchQuery = '';
+                  filterItems();  // Reset displayed items
+                });
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('$name added to the list!')),
                 );
@@ -204,6 +259,30 @@ class _SearchbarState extends State<Searchbar> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                margin: EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Remaining Budget:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '₱${remainingBudget.toStringAsFixed(2)}',
+                      style: TextStyle(
+                          color: Colors.teal.shade900,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
               TextField(
                 onChanged: updateSearchQuery,
                 decoration: InputDecoration(
@@ -342,12 +421,16 @@ class Category {
   Category({this.name, this.items});
 }
 
-
 class CategoryItemsPage extends StatelessWidget {
   final Category category;
   final String listTitle;
+  final Function(double, int) updateRemainingBalance; // Callback function
 
-  CategoryItemsPage({required this.category, required this.listTitle});
+  CategoryItemsPage({
+    required this.category,
+    required this.listTitle,
+    required this.updateRemainingBalance,  // Accept the callback
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -414,14 +497,14 @@ class CategoryItemsPage extends StatelessWidget {
                         ),
                         TextButton(
                           child: Text("Add"),
-                          onPressed: () async {
-                            // Call addItem with listTitle, name, price, and quantity
+                          onPressed: () async{
                             await ItemHelper.addItem(listTitle, name, price, quantity);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('$name added to the list!')),
                             );
                             Navigator.of(context).pop();
-
+                            // Call updateRemainingBalance to adjust the budget
+                            updateRemainingBalance(price, quantity);
                           },
                         ),
                       ],
@@ -492,3 +575,5 @@ class CategoryItemsPage extends StatelessWidget {
     );
   }
 }
+
+
