@@ -11,6 +11,7 @@ import 'dashboard.dart';
 import 'shared_prefs_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'notifications_screen.dart';
+import 'archiveScreen.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -339,16 +340,16 @@ class _HomePageState extends State<HomePage> {
           actions: [
             if (_selectedIndex != 1)
               IconButton(
-                icon: Icon(Icons.notifications, color: Colors.white),
+                icon: Icon(Icons.archive, color: Colors.white),
                 onPressed: () {
-                  // Navigate to the NotificationsScreen when the bell icon is tapped
+                  // Navigate to the ArchiveScreen when the archive icon is tapped
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => NotificationsScreen()),
+                    MaterialPageRoute(builder: (context) => ArchiveScreen()),
                   );
                 },
               ),
+
             if (_selectedIndex == 1)
               TextButton(
                 onPressed: () {
@@ -391,16 +392,23 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Colors.white,
           elevation: 0,
           currentIndex: _selectedIndex,
-          onTap: _onBottomNavTapped,
+          onTap: (index) {
+            if (index == 1) { // Assuming the second item was the "Create" button
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationsScreen()),
+              );
+            } else {
+              _onBottomNavTapped(index);
+            }
+          },
           selectedItemColor: Colors.teal,
           unselectedItemColor: Colors.teal.shade900,
           items: [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.add_circle_outline), label: 'Create'),
+            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notification'),
             BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard), label: 'Dashboard'),
+            BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
           ],
         ),
       ),

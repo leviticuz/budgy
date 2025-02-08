@@ -5,6 +5,8 @@ import 'package:Budgy/user_db.dart';
 import 'dummyItems.dart';
 import 'item_helper.dart';
 import 'package:Budgy/EditItemScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Searchbar extends StatefulWidget {
   final String listTitle;
@@ -23,20 +25,56 @@ class _SearchbarState extends State<Searchbar> {
   bool isLoading = true;
   bool networkError = false;
   String searchQuery = '';
-
+  double remainingBudget = 0.0;
+  double totalSpent = 0.0;
 
   @override
   void initState() {
     super.initState();
     fetchDataFromFirebase();
     fetchDataFromSQLite();
+    _getBudgetFromSharedPreferences();
+  }
+
+  void _getBudgetFromSharedPreferences() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? itemListJson = prefs.getString('itemList');
+
+    if (itemListJson != null) {
+      List<dynamic> itemList = jsonDecode(itemListJson);
+      var selectedList = itemList.firstWhere(
+            (list) => list['title'] == widget.listTitle,
+        orElse: () => null,
+      );
+
+      if (selectedList != null) {
+        double budget = selectedList['budget'] ?? 0.0;
+        List<dynamic> items = selectedList['items'] ?? [];
+
+        // Calculate total spent
+        totalSpent = items.fold(0.0, (sum, item) {
+          return sum + (item['price'] * item['quantity']);
+        });
+
+        setState(() {
+          remainingBudget = budget - totalSpent; // Remaining balance
+        });
+      }
+    }
+  }
+
+  // Function to update the remaining balance after adding an item
+  void updateRemainingBalance(double itemPrice, int quantity) {
+    setState(() {
+      totalSpent += itemPrice * quantity;
+      remainingBudget = remainingBudget - (itemPrice * quantity); // Calculate remaining balance
+    });
   }
 
   // Fetch data from Firebase
   Future<void> fetchDataFromFirebase() async {
     final DatabaseReference database = FirebaseDatabase.instance.ref('products');
 
-    // Start a timeout timer
     Future.delayed(Duration(seconds: 30), () {
       if (isLoading) {
         setState(() {
@@ -64,14 +102,13 @@ class _SearchbarState extends State<Searchbar> {
             categoryItems.add(item);
           });
 
-          // Add category with its items
           tempCategories.add(Category(name: categoryName, items: categoryItems));
         });
 
         setState(() {
           firebaseItems = tempItems;
           categories = tempCategories;
-          displayedItems = firebaseItems + sqliteItems; // Combine Firebase and SQLite items
+          displayedItems = firebaseItems + sqliteItems;
           isLoading = false;
         });
       } else {
@@ -88,13 +125,12 @@ class _SearchbarState extends State<Searchbar> {
     }
   }
 
-  // Fetch data from SQLite
   Future<void> fetchDataFromSQLite() async {
     try {
       final itemsFromSQLite = await DatabaseService.instance.getAllItems();
       setState(() {
         sqliteItems = itemsFromSQLite;
-        displayedItems = firebaseItems + sqliteItems; // Combine Firebase and SQLite items
+        displayedItems = firebaseItems + sqliteItems;
       });
     } catch (e) {
       print("Error fetching data from SQLite: $e");
@@ -126,8 +162,76 @@ class _SearchbarState extends State<Searchbar> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryItemsPage(category: category, listTitle: widget.listTitle,),
+        builder: (context) => CategoryItemsPage(
+          category: category,
+          listTitle: widget.listTitle,
+          updateRemainingBalance: updateRemainingBalance,  // Pass the callback here
+        ),
       ),
+    );
+  }
+
+
+  // Show modal to add item with quantity
+  void _showAddItemModal(Item item) {
+    TextEditingController quantityController = TextEditingController(text: "1");
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(item.item_name ?? 'Unknown Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Price: ₱${item.item_price ?? 0.0}"),
+              SizedBox(height: 10),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "Quantity",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();  // Close the modal
+              },
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                double price = item.item_price ?? 0.0;
+                String name = item.item_name ?? "Unknown Item";
+                int quantity = int.tryParse(quantityController.text) ?? 1;
+
+                // Call addItem to add item to the list
+                await ItemHelper.addItem(widget.listTitle, name, price, quantity);
+
+                // Update remaining budget after adding the item
+                updateRemainingBalance(price, quantity);
+
+                // Reset the search bar and item list
+                setState(() {
+                  searchQuery = '';
+                  filterItems();  // Reset displayed items
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('$name added to the list!')),
+                );
+                Navigator.of(context).pop();  // Close the modal
+              },
+              child: Text("Add"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -155,6 +259,30 @@ class _SearchbarState extends State<Searchbar> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                margin: EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Remaining Budget:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '₱${remainingBudget.toStringAsFixed(2)}',
+                      style: TextStyle(
+                          color: Colors.teal.shade900,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
               TextField(
                 onChanged: updateSearchQuery,
                 decoration: InputDecoration(
@@ -177,9 +305,9 @@ class _SearchbarState extends State<Searchbar> {
                   ? Expanded(
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // items per row
-                    crossAxisSpacing: 4, // Space horizontally
-                    mainAxisSpacing: 8, // Space vertically
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 8,
                     childAspectRatio: 1,
                   ),
                   itemCount: categories.length,
@@ -196,7 +324,7 @@ class _SearchbarState extends State<Searchbar> {
                         child: Container(
                           alignment: Alignment.center,
                           padding: EdgeInsets.all(10),
-                          child: category.name!.contains(" ") // Check if multi-word
+                          child: category.name!.contains(" ")
                               ? Text(
                             category.name!,
                             style: TextStyle(
@@ -205,12 +333,12 @@ class _SearchbarState extends State<Searchbar> {
                               color: Colors.teal.shade900,
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 3, // Wrap multi-word text
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
                           )
                               : FittedBox(
-                            fit: BoxFit.scaleDown, // Shrink long words
+                            fit: BoxFit.scaleDown,
                             child: Text(
                               category.name!,
                               style: TextStyle(
@@ -237,22 +365,8 @@ class _SearchbarState extends State<Searchbar> {
                   itemBuilder: (context, index) {
                     var item = displayedItems[index];
                     return GestureDetector(
-                      onTap: () async {
-                        print('work please');
-                        double price = 0.0;
-
-                        // First, check if item.item_cost is neither null nor "n/a"
-                        if (item.item_cost != null && item.item_cost != "n/a") {
-                          // Safely parse item.item_cost to double
-                          price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
-                        } else {
-                          price = item.item_price ?? 0.0;  // Fallback value if item.item_cost is "n/a" or null
-                        }
-                        String name = item.item_name ?? "Unknown Item";
-                        print(name);
-                        print(price);
-                        await ItemHelper.addItem(widget.listTitle, name, price);
-                        Navigator.pop(context); // Go back to category screen
+                      onTap: () {
+                        _showAddItemModal(item);  // Show the modal when item is tapped
                       },
                       child: Card(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -271,41 +385,18 @@ class _SearchbarState extends State<Searchbar> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
-                                  maxLines: null,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (item.item_price != null)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      "₱${item.item_price}",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade900,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    if (item.item_cost != null && item.item_cost != "n/a")
-                                      Text(
-                                        "Market Price: ₱${item.item_cost}",
-                                        style: TextStyle(
-                                          color: Colors.teal.shade700,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    if (item.item_cost == null || item.item_cost == "n/a")
-                                      Text(
-                                        "Market Price: n/a",
-                                        style: TextStyle(
-                                          color: Colors.teal.shade700,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                  ],
+                              Text(
+                                "₱${item.item_price?.toStringAsFixed(2) ?? '0.00'}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal.shade900,
                                 ),
+                              ),
                             ],
                           ),
                         ),
@@ -324,18 +415,22 @@ class _SearchbarState extends State<Searchbar> {
 }
 
 class Category {
-  final String? name;
-  final List<Item> items;
+  String? name;
+  List<Item>? items;
 
-  Category({this.name, required this.items});
-
+  Category({this.name, this.items});
 }
 
 class CategoryItemsPage extends StatelessWidget {
   final Category category;
   final String listTitle;
+  final Function(double, int) updateRemainingBalance; // Callback function
 
-  CategoryItemsPage({required this.category, required this.listTitle});
+  CategoryItemsPage({
+    required this.category,
+    required this.listTitle,
+    required this.updateRemainingBalance,  // Accept the callback
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -354,24 +449,68 @@ class CategoryItemsPage extends StatelessWidget {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: ListView.builder(
-          itemCount: category.items.length,
+          itemCount: category.items?.length ?? 0, // Null check for items length
           itemBuilder: (context, index) {
-            var item = category.items[index];
+            var item = category.items![index]; // Safely access item because itemCount is checked
+
             return GestureDetector(
-              onTap: () async {
+              onTap: () {
                 double price = 0.0;
 
                 // First, check if item.item_cost is neither null nor "n/a"
                 if (item.item_cost != null && item.item_cost != "n/a") {
                   // Safely parse item.item_cost to double
-                  price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
+                  price = double.tryParse(item.item_cost!) ?? 0.0; // Use '!' to assert it's not null
                 } else {
                   price = item.item_price ?? 0.0;
                 }
                 String name = item.item_name ?? "Unknown Item";
 
-                await ItemHelper.addItem(listTitle, name, price);
-                Navigator.pop(context); // Go back to category screen
+                // Show modal for entering quantity
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    int quantity = 1; // Default quantity
+
+                    return AlertDialog(
+                      title: Text("Add Item"),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text("Name: $name"),
+                          Text("Price: ₱$price"),
+                          TextField(
+                            decoration: InputDecoration(labelText: "Quantity"),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              quantity = int.tryParse(value) ?? 1; // Default to 1 if invalid
+                            },
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          child: Text("Cancel"),
+                          onPressed: () {
+                            Navigator.of(context).pop(); // Close the modal
+                          },
+                        ),
+                        TextButton(
+                          child: Text("Add"),
+                          onPressed: () async{
+                            await ItemHelper.addItem(listTitle, name, price, quantity);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$name added to the list!')),
+                            );
+                            Navigator.of(context).pop();
+                            // Call updateRemainingBalance to adjust the budget
+                            updateRemainingBalance(price, quantity);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
               child: Card(
                 margin: EdgeInsets.symmetric(vertical: 8),
