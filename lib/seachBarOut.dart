@@ -1,43 +1,85 @@
-import 'package:Budgy/dummyItems.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'package:Budgy/user_db.dart';
-import 'package:Budgy/EditItemScreen.dart';
+import 'dummyItems.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Seachbarout extends StatefulWidget {
-  const Seachbarout({super.key});
+  final String listTitle;
+
+  const Seachbarout({required this.listTitle, Key? key}) : super(key: key);
 
   @override
   State<Seachbarout> createState() => _SeachbaroutState();
 }
 
 class _SeachbaroutState extends State<Seachbarout> {
-  static List<Item> firebaseItems = []; // For Firebase items
-  static List<Item> sqliteItems = [];   // For SQLite items
-  List<Item> display_list = [];         // To show the combined list (if needed)
-  String loadingMessage = "Loading data...";
+  static List<Item> firebaseItems = [];
+  static List<Item> sqliteItems = [];
+  List<Item> displayedItems = [];
+  List<Category> categories = [];
   bool isLoading = true;
   bool networkError = false;
-
-  String category = ""; // User input category
+  String searchQuery = '';
+  double remainingBudget = 0.0;
+  double totalSpent = 0.0;
 
   @override
   void initState() {
     super.initState();
-    display_list.clear();
-    fetchDataFromSQLite();
     fetchDataFromFirebase();
+    fetchDataFromSQLite();
+    _getBudgetFromSharedPreferences();
   }
 
-  // Fetch Firebase data (Unchanged)
+  void _getBudgetFromSharedPreferences() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? itemListJson = prefs.getString('itemList');
+
+    if (itemListJson != null) {
+      List<dynamic> itemList = jsonDecode(itemListJson);
+      var selectedList = itemList.firstWhere(
+            (list) => list['title'] == widget.listTitle,
+        orElse: () => null,
+      );
+
+      if (selectedList != null) {
+        double budget = selectedList['budget'] ?? 0.0;
+        List<dynamic> items = selectedList['items'] ?? [];
+
+        // Calculate total spent
+        totalSpent = items.fold(0.0, (sum, item) {
+          return sum + (item['price'] * item['quantity']);
+        });
+
+        setState(() {
+          remainingBudget = budget - totalSpent; // Remaining balance
+        });
+      }
+    }
+  }
+
+  // Function to update the remaining balance after adding an item
+  void updateRemainingBalance(double itemPrice, int quantity) {
+    setState(() {
+      totalSpent += itemPrice * quantity;
+      remainingBudget = remainingBudget -
+          (itemPrice * quantity); // Calculate remaining balance
+    });
+  }
+
+  // Fetch data from Firebase
   Future<void> fetchDataFromFirebase() async {
-    final DatabaseReference database = FirebaseDatabase.instance.ref('products');
+    final DatabaseReference database = FirebaseDatabase.instance.ref(
+        'products');
 
     Future.delayed(Duration(seconds: 30), () {
       if (isLoading) {
         setState(() {
-          loadingMessage = "Network Unstable. Please try again.";
+          isLoading = false;
+          networkError = true;
         });
       }
     });
@@ -46,19 +88,29 @@ class _SeachbaroutState extends State<Seachbarout> {
       final snapshot = await database.get();
       if (snapshot.exists) {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
-        List<Item> tempList = [];
-        data.forEach((key, categoryData) {
-          final categoryName = categoryData['name'] ?? '';
-          if (category.isEmpty || categoryName.toLowerCase().contains(category.toLowerCase())) {
-            final items = Map<String, dynamic>.from(categoryData['items']);
-            items.forEach((_, itemData) {
-              tempList.add(Item.fromMap(Map<String, dynamic>.from(itemData), categoryName));
-            });
-          }
+        List<Item> tempItems = [];
+        List<Category> tempCategories = [];
+
+        data.forEach((key, category) {
+          final categoryName = category['name'] ?? '';
+          final items = Map<String, dynamic>.from(category['items']);
+          List<Item> categoryItems = [];
+
+          items.forEach((_, itemData) {
+            Item item = Item.fromMap(
+                Map<String, dynamic>.from(itemData), categoryName);
+            tempItems.add(item);
+            categoryItems.add(item);
+          });
+
+          tempCategories.add(
+              Category(name: categoryName, items: categoryItems));
         });
+
         setState(() {
-          firebaseItems = tempList;
-          display_list = List.from(sqliteItems)..addAll(firebaseItems);
+          firebaseItems = tempItems;
+          categories = tempCategories;
+          displayedItems = firebaseItems + sqliteItems;
           isLoading = false;
         });
       } else {
@@ -75,134 +127,59 @@ class _SeachbaroutState extends State<Seachbarout> {
     }
   }
 
-  // Fetch SQLite data (Separate from Firebase)
   Future<void> fetchDataFromSQLite() async {
     try {
       final itemsFromSQLite = await DatabaseService.instance.getAllItems();
       setState(() {
         sqliteItems = itemsFromSQLite;
-        // Ensure SQLite items always come first in the display_list
-        display_list = List.from(sqliteItems)..addAll(firebaseItems);
+        displayedItems = firebaseItems + sqliteItems;
       });
     } catch (e) {
       print("Error fetching data from SQLite: $e");
     }
   }
 
-  // Keyword-based category mapping
-  Map<String, String> keywordToCategory = {
-    "kape": "coffee products",
-    "tubig": "water",
-    "sabon": "soap",
-    "asin": "salt",
-    "suka": "vinegar",
-    "tinapay": "bread",
-    "kandila": "candles",
-    "gatas": "milk",
-    "toyo": "soy sauce",
-  };
-
-  // Update list based on user input
-  void updateCategory(String value) {
+  void updateSearchQuery(String value) {
     setState(() {
-      category = value;
-
-      if (value.isEmpty) {
-        // Reset display_list to its initial state
-        display_list = List.from(sqliteItems)..addAll(firebaseItems);
-      } else {
-        // Check for matching keywords
-        String? matchedCategory = keywordToCategory.entries
-            .firstWhere((entry) => entry.key.toLowerCase() == value.toLowerCase(), orElse: () => const MapEntry("", ""))
-            .value;
-
-        // If a keyword matches, filter by its associated category
-        if (matchedCategory.isNotEmpty) {
-          display_list = firebaseItems.where((element) =>
-          element.category_name != null &&
-              element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())).toList()
-            ..addAll(sqliteItems.where((element) =>
-            element.category_name != null &&
-                element.category_name!.toLowerCase().contains(matchedCategory.toLowerCase())));
-        } else {
-          // Default category filtering
-          display_list = firebaseItems.where((element) =>
-          element.category_name != null &&
-              element.category_name!.toLowerCase().contains(value.toLowerCase())).toList()
-            ..addAll(sqliteItems.where((element) =>
-            element.category_name != null &&
-                element.category_name!.toLowerCase().contains(value.toLowerCase())));
-        }
-      }
+      searchQuery = value;
+      filterItems();
     });
   }
 
-
-  void deleteSQLiteItem(int index) async {
-    var itemToDelete = sqliteItems[index];
-
-    // Show confirmation dialog
-    bool? confirmed = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Confirm Deletion"),
-        content: Text("Are you sure you want to delete ${itemToDelete.item_name}?"),
-        actions: <Widget>[
-          TextButton(
-            child: Text("Cancel"),
-            onPressed: () {
-              Navigator.of(context).pop(false); // User cancels the action
-            },
-          ),
-          TextButton(
-            child: Text("Delete"),
-            onPressed: () {
-              Navigator.of(context).pop(true); // User confirms the deletion
-            },
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != null && confirmed) {
-      try {
-        // Call delete function in DatabaseService
-        await DatabaseService.instance.deleteItem(itemToDelete);  // Implement delete function in DatabaseService
-        setState(() {
-          sqliteItems.removeAt(index); // Remove item from local list
-          display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update displayed list
-        });
-
-        // Show confirmation message
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("${itemToDelete.item_name} deleted successfully."),
-          duration: Duration(seconds: 2),
-        ));
-      } catch (e) {
-        print("Error deleting item: $e");
-      }
+  void filterItems() {
+    if (searchQuery.isNotEmpty) {
+      setState(() {
+        displayedItems = (firebaseItems + sqliteItems).where((item) {
+          return item.item_name!.toLowerCase().startsWith(searchQuery.toLowerCase());
+        }).toList();
+      });
+    } else {
+      setState(() {
+        displayedItems = firebaseItems + sqliteItems;
+      });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Color(0xFFB1E8DE),
+      backgroundColor: Color(0xFFB1E8DE),
+      appBar: AppBar(
+        backgroundColor: Color(0xFFB1E8DE),
+        title: Text(
+          "Search Items",
+          style: TextStyle(
+            color: Colors.teal.shade900,
+            fontSize: 22.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppBar(
-              backgroundColor: Color(0xFF5BB7A6),
-              automaticallyImplyLeading: false,
-              title: Text(
-                "Enter item to search",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
             TextField(
-              onChanged: (value) => updateCategory(value),
+              onChanged: updateSearchQuery,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -210,154 +187,161 @@ class _SeachbaroutState extends State<Seachbarout> {
                   borderRadius: BorderRadius.circular(9.0),
                   borderSide: BorderSide.none,
                 ),
-                hintText: "Enter category (e.g. Drinks or keywords)",
+                hintText: "Search Item",
                 prefixIcon: Icon(Icons.search),
               ),
             ),
-            isLoading
-                ? Center(child: CircularProgressIndicator())
-                : networkError
-                ? Center(
-              child: Text(
-                "Network Error. Please check your connection.",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
+            SizedBox(height: 20),
+            searchQuery.isEmpty
+                ? Expanded(
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 3 per row
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1,
                 ),
-              ),
-            )
-                : display_list.isEmpty
-                ? Center(
-                child: Text("No Results Found",
-                    style: TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold)))
-                : Expanded(
-              child: RefreshIndicator(
-                  onRefresh: () async {
-                    await fetchDataFromFirebase();
-                    await fetchDataFromSQLite();
-                  },
-                  child: ListView.builder(
-                    itemCount: display_list.length,
-                    itemBuilder: (context, index) {
-                      var item = display_list[index];
-                      var item_cost = item.item_cost;
-
-                      // Check if the category name should be displayed
-                      bool isFirstItemInCategory = index == 0 || display_list[index - 1].category_name != item.category_name;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (isFirstItemInCategory)
-                            Container(
-                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                              child: Text(
-                                item.category_name!,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal.shade900,
-                                ),
-                              ),
-                            ),
-                          GestureDetector(
-                            onTap: () {
-                              // Add your action for the item tap (if needed)
-                            },
-                            child: Card(
-                              child: ListTile(
-                                title: Column(
-
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${item.item_name!} ${item.item_unit}', // Concatenate item name with unit
-                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    if (sqliteItems.contains(item) && item.item_price != null)
-                                      Text(
-                                        "₱${item.item_price.toString()}",
-                                        style: TextStyle(
-                                          color: Colors.teal.shade900,
-                                          fontSize: 14, // Smaller font size for price
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                trailing: sqliteItems.contains(item)
-                                    ? PopupMenuButton<String>(
-                                  onSelected: (String value) {
-                                    if (value == 'delete') {
-                                      deleteSQLiteItem(index);
-                                    } else if (value == 'edit') {
-                                      // Navigate to EditItemScreen when "Edit" is selected
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => EditItemScreen(item: item), // Pass the selected item
-                                        ),
-                                      ).then((updatedItem) {
-                                        if (updatedItem != null) {
-                                          setState(() {
-                                            // Update the display list with the edited item
-                                            int itemIndex = sqliteItems.indexWhere((i) => i.item_name == updatedItem.item_name); // Use item_name as unique identifier
-                                            if (itemIndex != -1) {
-                                              sqliteItems[itemIndex] = updatedItem;
-                                              display_list = List.from(sqliteItems)..addAll(firebaseItems); // Update list with updated SQLite item
-                                            }
-                                          });
-                                        }
-                                      });
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem<String>(
-                                      value: 'edit',
-                                      child: Text('Edit'),
-                                    ),
-                                    PopupMenuItem<String>(
-                                      value: 'delete',
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                )
-                                    : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (item.item_price != null)
-                                      Text(
-                                        "₱${item.item_price.toString()}",
-                                        style: TextStyle(
-                                          color: Colors.teal.shade900,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      item_cost == null || item_cost == "n/a"
-                                          ? "Market Price: n/a"
-                                          : "Market Price: ₱$item_cost",
-                                      style: TextStyle(
-                                        color: Colors.teal.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryItemsPage(category: category, listTitle: '',),
+                        ),
                       );
                     },
-                  )),
+                    child: Card(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            category.name!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal.shade900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+                : Expanded(
+              child: displayedItems.isEmpty
+                  ? Center(child: Text("No items available"))
+                  : ListView.builder(
+                itemCount: displayedItems.length,
+                itemBuilder: (context, index) {
+                  var item = displayedItems[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.all(10),
+                      title: Text(
+                        item.item_name!,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      trailing: Text(
+                        "₱${item.item_price?.toStringAsFixed(2) ?? '0.00'}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade900,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+  class Category {
+  String? name;
+  List<Item>? items;
+
+  Category({this.name, this.items});
+}
+
+class CategoryItemsPage extends StatelessWidget {
+  final Category category;
+  final String listTitle;
+
+  CategoryItemsPage({required this.category, required this.listTitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFB1E8DE),
+      appBar: AppBar(
+        backgroundColor: Color(0xFFB1E8DE),
+        title: Text(category.name!),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: ListView.builder(
+          itemCount: category.items?.length ?? 0,
+          itemBuilder: (context, index) {
+            var item = category.items![index];
+            return Card(
+              margin: EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ListTile(
+                contentPadding: EdgeInsets.all(10),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.item_name!,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      "₱${item.item_price?.toStringAsFixed(2) ?? '0.00'}",
+                      style: TextStyle(
+                        color: Colors.teal.shade900,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

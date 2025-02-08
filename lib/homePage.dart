@@ -284,7 +284,7 @@ class _HomePageState extends State<HomePage> {
           isWeekly: _isWeekly,
         );
       case 2:
-        return Seachbarout();
+        return Seachbarout(listTitle: '',);
       case 3:
         return Dashboard(frequentlyBoughtItems: frequentlyBoughtItems);
       default:
