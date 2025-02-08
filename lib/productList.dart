@@ -289,6 +289,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     bool isOverBudget = totalCost > widget.item.budget;
 
     return Scaffold(
+
       appBar: AppBar(
         backgroundColor: Color(0xFFB1E8DE),
         title: Text('${widget.item.title}'),
@@ -299,7 +300,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ],
       ),
+
+
       body: widget.item.items.isEmpty
+
           ? GestureDetector(
         onTap:  () async {
           await Navigator.push(
@@ -325,6 +329,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ),
       )
+
           : Container(
         color: Color(0xFFB1E8DE),
         child: Column(
@@ -339,6 +344,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ],
             ),
             Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
+
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.all(16),
@@ -465,7 +471,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   );
                 },
               ),
+
             ),
+
+
             Container(
               padding: EdgeInsets.all(8),
               color: Colors.white,

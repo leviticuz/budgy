@@ -167,7 +167,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         centerTitle: true,
-        actions: <Widget>[
+
+        /*actions: <Widget>[
           IconButton(
             icon: Icon(Icons.search), onPressed: () {  },
            /* onPressed: () async {
@@ -191,7 +192,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               }
             },*/
           ),
-        ],
+        ],*/ //end of searchIcon hihi
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
