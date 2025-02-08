@@ -38,7 +38,7 @@ class Item {
           .toList(),
       selectedDate: DateTime.now(),
       creationDate: DateTime.parse(json['creationdate']),
-      weekly: json['weekly'] ?? false, // Default to false if missing
+      weekly: json['weekly'],
     );
   }
 }

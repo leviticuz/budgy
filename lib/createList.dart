@@ -32,17 +32,18 @@ class CreateTab extends StatefulWidget {
 class _CreateTabState extends State<CreateTab> {
   double totalBudget = 0.0;
   double totalSpending = 0.0;
-  bool _isWeekly = false; // Toggle bool
+  late bool _isWeekly; // Toggle bool
 
   @override
   void initState() {
     super.initState();
-    _isWeekly = widget.isWeekly;
+
     if (!widget.isNewList) {
       _loadData();
     } else {
       widget.titleController.clear();
       widget.budgetController.clear();
+      _isWeekly = widget.isWeekly;
     }
   }
 
@@ -211,7 +212,7 @@ class _CreateTabState extends State<CreateTab> {
                             ),
                           ),
                           IgnorePointer(
-                            ignoring: !widget.isNewList, // Disable switch if it's not a new list
+                            ignoring: !widget.isNewList,
                             child: Opacity(
                               opacity: widget.isNewList ? 1.0 : 0.5, // Reduce opacity when disabled
                               child: Switch(

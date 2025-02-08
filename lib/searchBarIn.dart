@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'package:Budgy/user_db.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'dummyItems.dart';
+import 'item_helper.dart';
 import 'package:Budgy/EditItemScreen.dart';
 
 class Searchbar extends StatefulWidget {
-  final Function(String, double, int) onItemSelected;
+  final String listTitle;
 
-  Searchbar({required this.onItemSelected, Key? key}) : super(key: key);
+  const Searchbar({required this.listTitle, Key? key}) : super(key: key);
 
   @override
   State<Searchbar> createState() => _SearchbarState();
@@ -23,8 +23,8 @@ class _SearchbarState extends State<Searchbar> {
   bool isLoading = true;
   bool networkError = false;
   String searchQuery = '';
-  Map<String, int> onItemSelected = {};
-  Timer? _toastTimer;
+
+
   @override
   void initState() {
     super.initState();
@@ -109,25 +109,24 @@ class _SearchbarState extends State<Searchbar> {
   }
 
   void filterItems() {
-    List<Item> allItems = firebaseItems + sqliteItems; // Use a separate list to avoid modifying the original data
     if (searchQuery.isNotEmpty) {
-      List<Item> filtered = allItems.where((item) {
-        return item.item_name!.toLowerCase().startsWith(searchQuery.toLowerCase());
-      }).toList();
       setState(() {
-        displayedItems = filtered;
+        displayedItems = displayedItems.where((item) {
+          return item.item_name!.toLowerCase().startsWith(searchQuery.toLowerCase());
+        }).toList();
       });
     } else {
       setState(() {
-        displayedItems = allItems;
+        displayedItems = firebaseItems + sqliteItems;
       });
     }
   }
+
   void showItemsUnderCategory(Category category) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryItemsPage(category: category, onItemSelected: (String , double , int ) {  },),
+        builder: (context) => CategoryItemsPage(category: category, listTitle: widget.listTitle,),
       ),
     );
   }
@@ -206,12 +205,12 @@ class _SearchbarState extends State<Searchbar> {
                               color: Colors.teal.shade900,
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 3,
+                            maxLines: 3, // Wrap multi-word text
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
                           )
                               : FittedBox(
-                            fit: BoxFit.scaleDown,
+                            fit: BoxFit.scaleDown, // Shrink long words
                             child: Text(
                               category.name!,
                               style: TextStyle(
@@ -238,21 +237,22 @@ class _SearchbarState extends State<Searchbar> {
                   itemBuilder: (context, index) {
                     var item = displayedItems[index];
                     return GestureDetector(
-                      onTap: () {
-                        widget.onItemSelected(item.item_name ?? "Unknown", item.item_price ?? 0.0, 1);
+                      onTap: () async {
+                        print('work please');
+                        double price = 0.0;
 
-                        _toastTimer?.cancel();
-                        _toastTimer = Timer(Duration(milliseconds: 300), () {
-                          Fluttertoast.cancel();
-                          Fluttertoast.showToast(
-                            msg: "${item.item_name} added to the list!",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.BOTTOM,
-                            backgroundColor: Colors.black,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
-                        });
+                        // First, check if item.item_cost is neither null nor "n/a"
+                        if (item.item_cost != null && item.item_cost != "n/a") {
+                          // Safely parse item.item_cost to double
+                          price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
+                        } else {
+                          price = item.item_price ?? 0.0;  // Fallback value if item.item_cost is "n/a" or null
+                        }
+                        String name = item.item_name ?? "Unknown Item";
+                        print(name);
+                        print(price);
+                        await ItemHelper.addItem(widget.listTitle, name, price);
+                        Navigator.pop(context); // Go back to category screen
                       },
                       child: Card(
                         margin: EdgeInsets.symmetric(vertical: 8),
@@ -328,26 +328,14 @@ class Category {
   final List<Item> items;
 
   Category({this.name, required this.items});
+
 }
 
-class CategoryItemsPage extends StatefulWidget {
+class CategoryItemsPage extends StatelessWidget {
   final Category category;
-  final Function(String, double, int) onItemSelected;
+  final String listTitle;
 
-  CategoryItemsPage({required this.category, required this.onItemSelected});
-
-  @override
-  _CategoryItemsPageState createState() => _CategoryItemsPageState();
-}
-
-class _CategoryItemsPageState extends State<CategoryItemsPage> {
-  Timer? _toastTimer;
-
-  @override
-  void dispose() {
-    _toastTimer?.cancel();
-    super.dispose();
-  }
+  CategoryItemsPage({required this.category, required this.listTitle});
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +343,7 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
       backgroundColor: Color(0xFFB1E8DE),
       appBar: AppBar(
         backgroundColor: Color(0xFFB1E8DE),
-        title: Text(widget.category.name!),
+        title: Text(category.name!),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -366,26 +354,24 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: ListView.builder(
-          itemCount: widget.category.items.length,
+          itemCount: category.items.length,
           itemBuilder: (context, index) {
-            var item = widget.category.items[index];
-
+            var item = category.items[index];
             return GestureDetector(
-              onTap: () {
-                widget.onItemSelected(item.item_name ?? "Unknown", item.item_price ?? 0.0, 1);
+              onTap: () async {
+                double price = 0.0;
 
-                _toastTimer?.cancel();
-                _toastTimer = Timer(Duration(milliseconds: 300), () {
-                  Fluttertoast.cancel();
-                  Fluttertoast.showToast(
-                    msg: "${item.item_name} added to the list!",
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: Colors.black,
-                    textColor: Colors.white,
-                    fontSize: 16.0,
-                  );
-                });
+                // First, check if item.item_cost is neither null nor "n/a"
+                if (item.item_cost != null && item.item_cost != "n/a") {
+                  // Safely parse item.item_cost to double
+                  price = double.tryParse(item.item_cost!) ?? 0.0;  // Use '!' to assert it's not null
+                } else {
+                  price = item.item_price ?? 0.0;
+                }
+                String name = item.item_name ?? "Unknown Item";
+
+                await ItemHelper.addItem(listTitle, name, price);
+                Navigator.pop(context); // Go back to category screen
               },
               child: Card(
                 margin: EdgeInsets.symmetric(vertical: 8),
@@ -450,6 +436,5 @@ class _CategoryItemsPageState extends State<CategoryItemsPage> {
     );
   }
 }
-
 
 

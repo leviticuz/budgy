@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'add_item.dart';
 import 'item_details.dart';
 import 'searchBarIn.dart';
-
 
 class ProductListScreen extends StatefulWidget {
   final Item item;
@@ -28,15 +26,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> _loadItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = prefs.getString('itemList');
+
     if (itemListJson != null) {
       final List<dynamic> decoded = jsonDecode(itemListJson);
+
       setState(() {
-        _itemList = decoded.map((json) => Item.fromJson(json)).toList();
+        var matchedItem = decoded.firstWhere(
+              (json) => json['title'] == widget.item.title,
+          orElse: () => null,
+        );
+
+        if (matchedItem != null) {
+          // Directly update widget.item.items instead of using a separate list
+          widget.item.items = List<ItemDetail>.from(
+            matchedItem['items'].map((jsonItem) => ItemDetail.fromJson(jsonItem)),
+          );
+        } else {
+          widget.item.items = [];
+        }
       });
     } else {
-      _itemList = [];
+      setState(() {
+        widget.item.items = [];
+      });
     }
   }
+
+
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,12 +63,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _updateItemInList(Item updatedItem) {
     setState(() {
-      final index = _itemList.indexWhere((item) =>
-      item.title == updatedItem.title);
+      final index = _itemList.indexWhere((item) => item.title == updatedItem.title);
       if (index != -1) {
         _itemList[index] = updatedItem;
+      } else {
+        _itemList.add(updatedItem);
       }
-      _saveItems();
+      _saveItems(); // Save updated list
     });
   }
 
@@ -61,7 +78,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
-  /*void _navigateToAddItemScreen() {
+  void _navigateToAddItemScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -98,45 +115,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ),
       ),
     );
-  }*/
-
-  void _addItemToList(String itemName, double itemPrice, int quantity) {
-    setState(() {
-      bool itemExists = false;
-
-      for (var existingItem in widget.item.items) {
-        if (existingItem.name == itemName) {
-          existingItem.quantity += quantity;
-          itemExists = true;
-          break;
-        }
-      }
-
-      if (!itemExists) {
-        widget.item.items.add(
-          ItemDetail(
-            name: itemName,
-            quantity: quantity,
-            isChecked: false,
-            price: itemPrice,
-          ),
-        );
-      }
-
-      _updateItemInList(widget.item);
-      _updateFrequentlyBoughtItems(itemName);
-      _saveSpendingForMonth(_calculateTotalCost(), widget.item.date);
-
-      /*Fluttertoast.showToast(
-        msg: itemExists ? "$itemName quantity updated!" : "$itemName added to the list!",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.black54,
-        textColor: Colors.white,
-      );*/
-    });
   }
-
 
   void _showConfirmPriceDialog(ItemDetail product, int index) {
     final TextEditingController priceController = TextEditingController();
@@ -269,6 +248,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
     currentMonthSpending += spending;
     await prefs.setDouble(monthKey + "_spending", currentMonthSpending);
   }
+  void _navigateToSearchBar(String listTitle) async {
+    // Navigate to the Searchbar screen and pass listTitle as an argument
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Searchbar(listTitle: listTitle),  // Pass listTitle here
+      ),
+    );
+
+    // After returning from Searchbar screen, reload the items and rebuild the widget
+    setState(() {
+      print('working...');
+      _loadItems(); // This should trigger a rebuild of the widget and update the UI
+    });
+  }
+
+
+
+
+
   void _toggleSelectAll(bool? value) {
     setState(() {
       _selectAll = value ?? false;
@@ -277,38 +276,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }
     });
   }
-
-  void _deleteSelectedItems() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Confirm Deletion"),
-          content: Text("Are you sure you want to delete all selected items?"),
-          actions: [
-            ElevatedButton(
-              child: Text("Cancel"),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            ElevatedButton(
-              child: Text("Delete",style: TextStyle(color: Color(0xFFb8181e)),),
-              onPressed: () {
-                setState(() {
-                  widget.item.items.removeWhere((item) => item.isChecked);
-                  _selectAll = false;
-                });
-                _updateItemInList(widget.item);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     double totalCost = _calculateTotalCost();
@@ -322,22 +289,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute( builder: (context) =>  Searchbar(onItemSelected: _addItemToList)),
-              );
-            },
+            onPressed: () async => _navigateToSearchBar(widget.item.title),
           ),
         ],
       ),
       body: widget.item.items.isEmpty
           ? GestureDetector(
-        onTap:  () {
-          Navigator.push(
+        onTap:  () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Searchbar(onItemSelected: _addItemToList)),
-            );
+            MaterialPageRoute(
+              builder: (context) => Searchbar(listTitle: widget.item.title),  // Pass listTitle here
+            ),
+          );
+          _loadItems();
         },
         child: Container(
           color: Color(0xFFB1E8DE),
@@ -359,25 +324,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _selectAll,
-                      onChanged: _toggleSelectAll,
-                    ),
-                    Text("Select All Items"),
-                  ],
+                Checkbox(
+                  value: _selectAll,
+                  onChanged: _toggleSelectAll,
                 ),
-                if (_selectAll)
-                  TextButton(
-                    onPressed: _deleteSelectedItems,
-                    child: Text(
-                      "Delete All",
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
+                Text("Select All Items"),
               ],
             ),
             Text("Note: Slide to Delete", style: TextStyle(color: Colors.grey)),
