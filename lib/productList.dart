@@ -26,6 +26,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> _loadItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = prefs.getString('itemList');
+    final selectAllState = prefs.getBool('selectAllState') ?? false;
 
     if (itemListJson != null) {
       final List<dynamic> decoded = jsonDecode(itemListJson);
@@ -37,10 +38,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
         );
 
         if (matchedItem != null) {
-          // Directly update widget.item.items instead of using a separate list
           widget.item.items = List<ItemDetail>.from(
             matchedItem['items'].map((jsonItem) => ItemDetail.fromJson(jsonItem)),
           );
+
+          // Restore the select all state
+          _selectAll = selectAllState;
+          for (var item in widget.item.items) {
+            item.isChecked = _selectAll;
+          }
         } else {
           widget.item.items = [];
         }
@@ -264,17 +270,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
-
-
-
-
-  void _toggleSelectAll(bool? value) {
+  void _toggleSelectAll(bool? value) async {
     setState(() {
       _selectAll = value ?? false;
       for (var item in widget.item.items) {
         item.isChecked = _selectAll;
       }
     });
+
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('selectAllState', _selectAll);
+    _updateItemInList(widget.item);
   }
   @override
   Widget build(BuildContext context) {
