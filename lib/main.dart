@@ -3,6 +3,7 @@ import 'homePage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lottie/lottie.dart';
+import 'dart:convert';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,10 +21,43 @@ void main() async {
   );
 
   final prefs = await SharedPreferences.getInstance();
+  await _cleanOldData(prefs); // ✅ Auto-delete old lists
+
   logSharedPreferencesContents(prefs);
   final seenGetStarted = prefs.getBool('seenGetStarted') ?? false;
 
   runApp(MyApp(seenGetStarted: seenGetStarted));
+}
+
+Future<void> _cleanOldData(SharedPreferences prefs) async {
+  final now = DateTime.now();
+  final thresholdDate = now.subtract(Duration(days: 5 * 365)); // 5 years ago
+
+  // ✅ Process `itemList` (stored as a JSON string)
+  final String? itemListJson = prefs.getString('itemList');
+  if (itemListJson != null) {
+    List<dynamic> itemList = jsonDecode(itemListJson);
+    itemList = itemList.where((item) {
+      DateTime creationDate = DateTime.parse(item['creationdate']);
+      return creationDate.isAfter(thresholdDate);
+    }).toList();
+
+    prefs.setString('itemList', jsonEncode(itemList));
+  }
+
+  // ✅ Process `archivedItems` (stored as a List<String>)
+  final List<String>? archivedItems = prefs.getStringList('archivedItems');
+  if (archivedItems != null) {
+    List<String> updatedArchivedItems = archivedItems.where((itemJson) {
+      Map<String, dynamic> item = jsonDecode(itemJson);
+      DateTime creationDate = DateTime.parse(item['creationdate']);
+      return creationDate.isAfter(thresholdDate);
+    }).toList();
+
+    prefs.setStringList('archivedItems', updatedArchivedItems);
+  }
+
+  print("Old financial data cleaned up!");
 }
 
 void logSharedPreferencesContents(SharedPreferences prefs) {

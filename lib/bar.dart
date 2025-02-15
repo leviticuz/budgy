@@ -32,39 +32,26 @@ class _barChartState extends State<barChart> {
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final year = widget.selectedDate.year;
-    print("Selected Year: $year");
 
     List<Map<String, double>> tempData = List.generate(12, (_) => {"totalBudget": 0.0, "totalSpending": 0.0});
     double maxSpendingOrBudget = 0.0;
 
-    // Retrieve the saved item list
+    // Retrieve and process active items
     final itemListJson = prefs.getString('itemList');
     if (itemListJson != null) {
       List<dynamic> itemList = jsonDecode(itemListJson);
+      _processItems(itemList, tempData, year, (value) {
+        maxSpendingOrBudget = max(maxSpendingOrBudget, value);
+      });
+    }
 
-      for (var item in itemList) {
-        DateTime itemDate = DateTime.parse(item["date"]);
-        if (itemDate.year == year) {
-          int monthIndex = itemDate.month - 1; // Convert to 0-based index
-
-          // Extract budget
-          double budget = (item["budget"] ?? 0.0);
-
-          // Calculate total spending from items
-          double totalSpending = 0.0;
-          List<dynamic> items = item["items"] ?? [];
-          for (var itemDetail in items) {
-            totalSpending += (itemDetail["price"] ?? 0.0);
-          }
-
-          // Accumulate per month
-          tempData[monthIndex]["totalBudget"] = (tempData[monthIndex]["totalBudget"] ?? 0.0) + budget;
-          tempData[monthIndex]["totalSpending"] = (tempData[monthIndex]["totalSpending"] ?? 0.0) + totalSpending;
-
-          // Track the highest value for scaling the chart
-          maxSpendingOrBudget = max(maxSpendingOrBudget, max(tempData[monthIndex]["totalBudget"]!, tempData[monthIndex]["totalSpending"]!));
-        }
-      }
+    // Retrieve and process archived items
+    final archivedItemsJson = prefs.getStringList('archivedItems');
+    if (archivedItemsJson != null) {
+      List<dynamic> archivedItemList = archivedItemsJson.map((item) => jsonDecode(item)).toList();
+      _processItems(archivedItemList, tempData, year, (value) {
+        maxSpendingOrBudget = max(maxSpendingOrBudget, value);
+      });
     }
 
     setState(() {
@@ -72,9 +59,31 @@ class _barChartState extends State<barChart> {
       maxYValue = (maxSpendingOrBudget * 1.5).ceilToDouble();
       if (maxYValue < 10) maxYValue = 10;
     });
-
-    print("Monthly Data: $monthlyData"); // Debug output
   }
+
+// Helper function to process items
+  void _processItems(List<dynamic> itemList, List<Map<String, double>> tempData, int year, Function(double) updateMax) {
+    for (var item in itemList) {
+      DateTime itemDate = DateTime.parse(item["date"]);
+      if (itemDate.year == year) {
+        int monthIndex = itemDate.month - 1; // Convert to 0-based index
+
+        double budget = (item["budget"] ?? 0.0);
+        double totalSpending = 0.0;
+
+        List<dynamic> items = item["items"] ?? [];
+        for (var itemDetail in items) {
+          totalSpending += (itemDetail["price"] ?? 0.0);
+        }
+
+        tempData[monthIndex]["totalBudget"] = (tempData[monthIndex]["totalBudget"] ?? 0.0) + budget;
+        tempData[monthIndex]["totalSpending"] = (tempData[monthIndex]["totalSpending"] ?? 0.0) + totalSpending;
+
+        updateMax(max(tempData[monthIndex]["totalBudget"]!, tempData[monthIndex]["totalSpending"]!));
+      }
+    }
+  }
+
 
 
 

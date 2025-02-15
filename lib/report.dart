@@ -111,22 +111,35 @@ class FinancialReportGenerator {
 
   Future<void> showFinancialReport(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Fetch and decode itemList
     final itemListJson = prefs.getString('itemList');
-
-    if (itemListJson == null) {
-      _showAlertDialog(context, "No existing data!");
-      return;
+    List<dynamic> itemList = [];
+    if (itemListJson != null) {
+      try {
+        itemList = jsonDecode(itemListJson);
+      } catch (e) {
+        _showAlertDialog(context, "Error parsing itemList data!");
+        return;
+      }
     }
 
-    List<dynamic> itemList;
-    try {
-      itemList = jsonDecode(itemListJson) ?? [];
-    } catch (e) {
-      _showAlertDialog(context, "Error parsing financial data!");
-      return;
+    // Fetch and decode archivedItems
+    final archiveListRaw = prefs.getStringList('archivedItems');
+    List<dynamic> archiveList = [];
+    if (archiveListRaw != null) {
+      try {
+        archiveList = archiveListRaw.map((e) => jsonDecode(e)).toList();
+      } catch (e) {
+        _showAlertDialog(context, "Error parsing archivedItems data!");
+        return;
+      }
     }
 
-    if (itemList.isEmpty) {
+    // Combine both lists
+    List<dynamic> combinedList = [...itemList, ...archiveList];
+
+    if (combinedList.isEmpty) {
       _showAlertDialog(context, "No financial data available!");
       return;
     }
@@ -134,11 +147,10 @@ class FinancialReportGenerator {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FinancialReportScreen(itemList: itemList),
+        builder: (context) => FinancialReportScreen(itemList: combinedList),
       ),
     );
   }
-
 
   List<String> _extractYears(List<dynamic> itemList) {
     return itemList
@@ -287,30 +299,30 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   Widget _buildPieChart(double budget, double expenses, double saved) {
+
+    double expenseValue = (expenses/budget)*100;
+    double savedValue = (saved/budget)*100;
+
     return SizedBox(
       height: 200,
       child: PieChart(
         PieChartData(
           sections: [
             PieChartSectionData(
-              color: Colors.blue,
-              value: budget,
-              title: "Budget",
-              radius: 50,
-            ),
-            PieChartSectionData(
               color: Colors.red,
-              value: expenses,
-              title: "Expenses",
+              value: expenseValue,
               radius: 50,
+              showTitle: false,
+              borderSide: BorderSide(color: Colors.black, width: 1),
             ),
             PieChartSectionData(
               color: Colors.green,
-              value: saved,
-              title: "Saved",
+              value: savedValue,
               radius: 50,
+              showTitle: false,
             ),
           ],
+          centerSpaceRadius: 40,
         ),
       ),
     );
@@ -334,7 +346,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                 ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Budget: \₱${data['budget']}", style: TextStyle(fontSize: 16)),
+                Text("Budget: \₱${data['budget']}", style: TextStyle(fontSize: 16, color: Colors.blue)),
                 Text("Expenses: \₱${data['expenses']}", style: TextStyle(fontSize: 16, color: Colors.red)),
                 Text("Saved: \₱${data['saved']}", style: TextStyle(fontSize: 16, color: Colors.green)),
                 SizedBox(height: 10),

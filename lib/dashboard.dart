@@ -43,60 +43,107 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
 
   Future<void> _loadFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Fetch itemList
     final String? storedData = prefs.getString('itemList');
-
+    List<dynamic> itemListData = [];
     if (storedData != null) {
-      final List<dynamic> itemListData = jsonDecode(storedData);
-      Map<String, int> updatedFrequentlyBoughtItems = {};
-
-      for (var item in itemListData) {
-        List<dynamic> items = item['items'];
-        for (var product in items) {
-          String itemName = product['name'];
-          int quantity = product['quantity'];
-          updatedFrequentlyBoughtItems.update(
-              itemName, (value) => value + quantity, ifAbsent: () => quantity);
-        }
+      try {
+        itemListData = jsonDecode(storedData);
+      } catch (e) {
+        print("Error parsing itemList data: $e");
+        return;
       }
-      setState(() {
-        frequentlyBoughtItems = updatedFrequentlyBoughtItems;
-      });
     }
+
+    // Fetch archivedItems
+    final List<String>? archivedDataRaw = prefs.getStringList('archivedItems');
+    List<dynamic> archivedListData = [];
+    if (archivedDataRaw != null) {
+      try {
+        archivedListData = archivedDataRaw.map((e) => jsonDecode(e)).toList();
+      } catch (e) {
+        print("Error parsing archivedItems data: $e");
+        return;
+      }
+    }
+
+    // Merge both lists
+    List<dynamic> combinedList = [...itemListData, ...archivedListData];
+
+    Map<String, int> updatedFrequentlyBoughtItems = {};
+
+    for (var item in combinedList) {
+      List<dynamic> items = item['items'];
+      for (var product in items) {
+        String itemName = product['name'];
+        int quantity = product['quantity'];
+        updatedFrequentlyBoughtItems.update(
+            itemName, (value) => value + quantity, ifAbsent: () => quantity);
+      }
+    }
+
+    setState(() {
+      frequentlyBoughtItems = updatedFrequentlyBoughtItems;
+    });
   }
 
   Future<void> _loadMonthlyFrequentlyBoughtItems() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Fetch itemList
     final String? storedData = prefs.getString('itemList');
-
+    List<dynamic> itemListData = [];
     if (storedData != null) {
-      final List<dynamic> itemListData = jsonDecode(storedData);
-      List<Map<String, dynamic>> filteredItems = [];
-
-      for (var item in itemListData) {
-        String itemDate = item['date'];
-        DateTime itemDateTime = DateTime.parse(itemDate);
-        if (selectedMonth == null) return;
-        if (itemDateTime.year == selectedDate.year &&
-            itemDateTime.month == (months.indexOf(selectedMonth!) + 1)) {
-          filteredItems.add(item);
-        }
+      try {
+        itemListData = jsonDecode(storedData);
+      } catch (e) {
+        print("Error parsing itemList data: $e");
+        return;
       }
-
-      Map<String, int> updatedMonthlyItems = {};
-      for (var item in filteredItems) {
-        List<dynamic> items = item['items'];
-        for (var product in items) {
-          String itemName = product['name'];
-          int quantity = product['quantity'];
-          updatedMonthlyItems.update(
-              itemName, (value) => value + quantity, ifAbsent: () => quantity);
-        }
-      }
-
-      setState(() {
-        monthlyFrequentlyBoughtItems = updatedMonthlyItems;
-      });
     }
+
+    // Fetch archivedItems
+    final List<String>? archivedDataRaw = prefs.getStringList('archivedItems');
+    List<dynamic> archivedListData = [];
+    if (archivedDataRaw != null) {
+      try {
+        archivedListData = archivedDataRaw.map((e) => jsonDecode(e)).toList();
+      } catch (e) {
+        print("Error parsing archivedItems data: $e");
+        return;
+      }
+    }
+
+    // Merge both lists
+    List<dynamic> combinedList = [...itemListData, ...archivedListData];
+
+    List<Map<String, dynamic>> filteredItems = [];
+
+    for (var item in combinedList) {
+      String itemDate = item['date'];
+      DateTime itemDateTime = DateTime.parse(itemDate);
+      if (selectedMonth == null) return;
+      if (itemDateTime.year == selectedDate.year &&
+          itemDateTime.month == (months.indexOf(selectedMonth!) + 1)) {
+        filteredItems.add(item);
+      }
+    }
+
+    Map<String, int> updatedMonthlyItems = {};
+    for (var item in filteredItems) {
+      List<dynamic> items = item['items'];
+      for (var product in items) {
+        String itemName = product['name'];
+        int quantity = product['quantity'];
+        updatedMonthlyItems.update(
+            itemName, (value) => value + quantity, ifAbsent: () => quantity);
+      }
+    }
+
+    setState(() {
+      monthlyFrequentlyBoughtItems = updatedMonthlyItems;
+    });
   }
 
   List<BarChartGroupData> _generateBarData(Map<String, int> dataMap) {

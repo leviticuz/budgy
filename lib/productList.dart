@@ -58,8 +58,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
   }
 
-
-
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = jsonEncode(
@@ -280,8 +278,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool('selectAllState', _selectAll);
+
+    // Load the itemList from SharedPreferences
+    final String? storedData = prefs.getString('itemList');
+    if (storedData != null) {
+      List<dynamic> itemList = jsonDecode(storedData);
+
+      // Find and update the specific item in itemList
+      for (var listItem in itemList) {
+        if (listItem['title'] == widget.item.title) {
+          for (var subItem in listItem['items']) {
+            subItem['isChecked'] = _selectAll;
+          }
+        }
+      }
+
+      // Save the updated itemList back to SharedPreferences
+      prefs.setString('itemList', jsonEncode(itemList));
+    }
+
     _updateItemInList(widget.item);
   }
+
+
   @override
   Widget build(BuildContext context) {
     double totalCost = _calculateTotalCost();

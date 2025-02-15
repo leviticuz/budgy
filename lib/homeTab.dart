@@ -38,6 +38,28 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
+
+  void _archiveItem(Item item) async {
+    // Remove from the list and save changes
+    setState(() {
+      itemList.remove(item);
+    });
+
+    // Save updated list to SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('itemList', jsonEncode(itemList));
+
+    // Optionally, move it to an "archivedItems" list
+    List<String> archivedItems = prefs.getStringList('archivedItems') ?? [];
+    archivedItems.add(jsonEncode(item));
+    prefs.setStringList('archivedItems', archivedItems);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("${item.title} archived")),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     // Separate lists based on 'weekly' value
@@ -148,13 +170,15 @@ class _HomeTabState extends State<HomeTab> {
                     offset: Offset(0, 30),
                     onSelected: (value) {
                       if (value == 'edit') {
-                        widget.onEdit(item); // Calls the onEdit function
+                        widget.onEdit(item);
                       } else if (value == 'delete') {
-                        widget.onDelete(item); // Calls the onDelete function
+                        widget.onDelete(item);
+                      } else if (value == 'archive') {
+                        _archiveItem(item);
                       }
                     },
                     itemBuilder: (BuildContext context) {
-                      return [
+                      List<PopupMenuEntry<String>> menuItems = [
                         PopupMenuItem<String>(
                           value: 'edit',
                           height: 30,
@@ -173,11 +197,31 @@ class _HomeTabState extends State<HomeTab> {
                             padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
                             child: Text(
                               'Delete',
-                              style: TextStyle(fontSize: 12, color: Color(0xFFb8181e)),
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
                       ];
+
+                      // Add "Archive" option only for scheduled items
+                      if (!item.weekly) {
+                        menuItems.insert(
+                          0,
+                          PopupMenuItem<String>(
+                            value: 'archive',
+                            height: 30,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                              child: Text(
+                                'Archive',
+                                style: TextStyle(fontSize: 12, color: Color(0xFFb8181e)),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return menuItems;
                     },
                   ),
                   onTap: () {

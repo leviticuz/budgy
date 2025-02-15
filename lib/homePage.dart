@@ -272,17 +272,8 @@ class _HomePageState extends State<HomePage> {
         return HomeTab(
             onDelete: _deleteItem, onEdit: _editItem);
       case 1:
-        return CreateTab(
-          titleController: _titleController,
-          budgetController: _budgetController,
-          dateController: _dateController,
-          selectedDate: _selectedDate,
-          onDatePicked: (pickedDate) =>
-              setState(() => _selectedDate = pickedDate),
-          onSelectDate: () => _selectDate(context),
-          isNewList: true,
-          isWeekly: _isWeekly,
-        );
+        return HomeTab(
+            onDelete: _deleteItem, onEdit: _editItem);
       case 2:
         return Seachbarout(listTitle: '',);
       case 3:
@@ -341,9 +332,9 @@ class _HomePageState extends State<HomePage> {
             if (_selectedIndex != 1)
               IconButton(
                 icon: Icon(Icons.archive, color: Colors.white),
-                onPressed: () {
-                  // Navigate to the ArchiveScreen when the archive icon is tapped
-                  Navigator.push(
+                onPressed: () async {
+                  // Navigate to ArchiveScreen and wait for result
+                  bool? restored = await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => ArchiveScreen()),
                   );
