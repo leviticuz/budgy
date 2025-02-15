@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:convert';
 
 
 class barChart extends StatefulWidget {
@@ -31,35 +32,50 @@ class _barChartState extends State<barChart> {
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final year = widget.selectedDate.year;
+    print("Selected Year: $year");
 
-    List<Map<String, double>> tempData = [];
+    List<Map<String, double>> tempData = List.generate(12, (_) => {"totalBudget": 0.0, "totalSpending": 0.0});
     double maxSpendingOrBudget = 0.0;
 
-    SharedPrefsHelper sharedPrefsHelper = SharedPrefsHelper();
+    // Retrieve the saved item list
+    final itemListJson = prefs.getString('itemList');
+    if (itemListJson != null) {
+      List<dynamic> itemList = jsonDecode(itemListJson);
 
-    for (int i = 0; i < 12; i++) {
-      double budget = 0;
-      double spending = 0;
-      final month = (i + 1).toString().padLeft(2, '0');
+      for (var item in itemList) {
+        DateTime itemDate = DateTime.parse(item["date"]);
+        if (itemDate.year == year) {
+          int monthIndex = itemDate.month - 1; // Convert to 0-based index
 
-      int daysInMonth = DateTime(year, i + 1 + 1, 0).day;  // This gives the last day of the month
+          // Extract budget
+          double budget = (item["budget"] ?? 0.0);
 
-      for (int dayIndex = 1; dayIndex <= daysInMonth; dayIndex++) {
-        final day = dayIndex.toString().padLeft(2, '0');
-        final monthKey = "$year-$month-$day";
-        budget += prefs.getDouble("${monthKey}_budget") ?? 0.0;
-        spending += await sharedPrefsHelper.saveSpending(0, DateTime(year, i + 1, dayIndex));
+          // Calculate total spending from items
+          double totalSpending = 0.0;
+          List<dynamic> items = item["items"] ?? [];
+          for (var itemDetail in items) {
+            totalSpending += (itemDetail["price"] ?? 0.0);
+          }
+
+          // Accumulate per month
+          tempData[monthIndex]["totalBudget"] = (tempData[monthIndex]["totalBudget"] ?? 0.0) + budget;
+          tempData[monthIndex]["totalSpending"] = (tempData[monthIndex]["totalSpending"] ?? 0.0) + totalSpending;
+
+          // Track the highest value for scaling the chart
+          maxSpendingOrBudget = max(maxSpendingOrBudget, max(tempData[monthIndex]["totalBudget"]!, tempData[monthIndex]["totalSpending"]!));
+        }
       }
-
-      tempData.add({"totalBudget": budget, "totalSpending": spending});
-      maxSpendingOrBudget = max(maxSpendingOrBudget, max(budget, spending));
     }
+
     setState(() {
       monthlyData = tempData;
       maxYValue = (maxSpendingOrBudget * 1.5).ceilToDouble();
       if (maxYValue < 10) maxYValue = 10;
     });
+
+    print("Monthly Data: $monthlyData"); // Debug output
   }
+
 
 
   List<BarChartGroupData> _generateChartGroups() {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class FinancialReportGenerator {
 
@@ -72,6 +73,41 @@ class FinancialReportGenerator {
     };
   }
 
+  Map<String, dynamic> _calculateDailyData(
+      List<dynamic> itemList, String year, String month, String day) {
+    final filteredItems = itemList.where((item) {
+      if (item['date'] == null) return false;
+      final date = DateTime.parse(item['date']);
+      return date.year.toString() == year &&
+          _months[date.month - 1] == month &&
+          date.day.toString() == day;
+    }).toList();
+
+    double totalBudget =
+    filteredItems.fold(0.0, (sum, item) => sum + (item['budget'] ?? 0.0));
+    double totalExpenses = filteredItems.fold(
+        0.0,
+            (sum, item) =>
+        sum +
+            (item['items'] != null
+                ? (item['items'] as List<dynamic>)
+                .where((subItem) => subItem['isChecked'] == true)
+                .fold(
+                0.0,
+                    (subSum, subItem) =>
+                subSum + ((subItem['price'] * subItem['quantity']) ?? 0.0))
+                : 0.0));
+
+    double totalSaved = totalBudget - totalExpenses;
+    List frequentItems = _calculateFrequentItems(filteredItems);
+
+    return {
+      "budget": totalBudget,
+      "expenses": totalExpenses,
+      "saved": totalSaved,
+      "frequentItems": frequentItems,
+    };
+  }
 
   Future<void> showFinancialReport(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -222,10 +258,12 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   String selectedYear = "2025";
   String selectedMonth = "January";
   String selectedWeek = "1st Week";
+  String selectedDay = "1";
 
   late Map<String, dynamic> annualData;
   late Map<String, dynamic> monthlyData;
   late Map<String, dynamic> weeklyData;
+  late Map<String, dynamic> dailyData;
 
   @override
   void initState() {
@@ -234,103 +272,160 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   void _calculateReports() {
-    annualData = FinancialReportGenerator()._calculateAnnualData(widget.itemList, selectedYear);
-    monthlyData = FinancialReportGenerator()._calculateMonthlyData(widget.itemList, selectedYear, selectedMonth);
-    weeklyData = FinancialReportGenerator()._calculateWeeklyData(widget.itemList, selectedYear, selectedMonth, selectedWeek);
+    final generator = FinancialReportGenerator();
+    annualData = generator._calculateAnnualData(widget.itemList, selectedYear);
+    monthlyData = generator._calculateMonthlyData(widget.itemList, selectedYear, selectedMonth);
+    weeklyData = generator._calculateWeeklyData(widget.itemList, selectedYear, selectedMonth, selectedWeek);
+    dailyData = generator._calculateDailyData(widget.itemList, selectedYear, selectedMonth, selectedDay);
+  }
+
+  List<String> _getDaysInMonth() {
+    int monthIndex = FinancialReportGenerator()._months.indexOf(selectedMonth) + 1;
+    int year = int.parse(selectedYear);
+    int daysInMonth = DateTime(year, monthIndex + 1, 0).day;
+    return List.generate(daysInMonth, (index) => (index + 1).toString());
+  }
+
+  Widget _buildPieChart(double budget, double expenses, double saved) {
+    return SizedBox(
+      height: 200,
+      child: PieChart(
+        PieChartData(
+          sections: [
+            PieChartSectionData(
+              color: Colors.blue,
+              value: budget,
+              title: "Budget",
+              radius: 50,
+            ),
+            PieChartSectionData(
+              color: Colors.red,
+              value: expenses,
+              title: "Expenses",
+              radius: 50,
+            ),
+            PieChartSectionData(
+              color: Colors.green,
+              value: saved,
+              title: "Saved",
+              radius: 50,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCard(String title, Map<String, dynamic> data) {
+    bool hasData = data['budget'] > 0 || data['expenses'] > 0 || data['saved'] > 0;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Divider(),
+            hasData
+                ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Budget: \₱${data['budget']}", style: TextStyle(fontSize: 16)),
+                Text("Expenses: \₱${data['expenses']}", style: TextStyle(fontSize: 16, color: Colors.red)),
+                Text("Saved: \₱${data['saved']}", style: TextStyle(fontSize: 16, color: Colors.green)),
+                SizedBox(height: 10),
+                _buildPieChart(data['budget'], data['expenses'], data['saved']),
+                Text("Frequently Bought Items:", style: TextStyle(fontWeight: FontWeight.bold)),
+                ...data['frequentItems'].map<Widget>(
+                      (item) => Text("- ${item['name']} (${item['percentage']}%)"),
+                ).toList(),
+              ],
+            )
+                : Center(
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Text("No data available", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildDropdown(String label, String value, List<String> items, Function(String) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        SizedBox(height: 5),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            underline: SizedBox(),
+            items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => onChanged(value));
+              }
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Budgy Financial Report"),
-      ),
+      appBar: AppBar(title: Text("Budgy Financial Report"), backgroundColor: Colors.blueAccent),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DropdownButton<String>(
-              value: selectedYear,
-              items: FinancialReportGenerator()._extractYears(widget.itemList)
-                  .map((year) => DropdownMenuItem<String>(
-                value: year,
-                child: Text(year),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedYear = value;
-                    selectedMonth = "January"; // Reset month on year change
-                    selectedWeek = "1st Week"; // Reset week on year change
-                    _calculateReports();
-                  });
-                }
-              },
-            ),
-            Text("Annual Total Budget: \₱${annualData['budget']}"),
-            Text("Annual Total Expenses: \₱${annualData['expenses']}"),
-            Text("Annual Total Saved: \₱${annualData['saved']}"),
-            Text("Frequently Bought Items:"),
-            ...annualData['frequentItems']
-                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
-                .toList(),
+            _buildDropdown("Select Year", selectedYear,
+                FinancialReportGenerator()._extractYears(widget.itemList), (value) {
+                  selectedYear = value;
+                  _calculateReports();
+                }),
 
+            _buildDataCard("Annual Report", annualData),
             Divider(),
 
-            DropdownButton<String>(
-              value: selectedMonth,
-              items: FinancialReportGenerator()._months
-                  .map((month) => DropdownMenuItem<String>(
-                value: month,
-                child: Text(month),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedMonth = value;
-                    selectedWeek = "1st Week"; // Reset week on month change
-                    _calculateReports();
-                  });
-                }
-              },
-            ),
-            Text("Monthly Budget: \₱${monthlyData['budget']}"),
-            Text("Monthly Expenses: \₱${monthlyData['expenses']}"),
-            Text("Monthly Saved: \₱${monthlyData['saved']}"),
-            Text("Frequently Bought Items:"),
-            ...monthlyData['frequentItems']
-                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
-                .toList(),
+            _buildDropdown("Select Month", selectedMonth, FinancialReportGenerator()._months, (value) {
+              selectedMonth = value;
+              _calculateReports();
+            }),
 
+            _buildDataCard("Monthly Report", monthlyData),
             Divider(),
 
-            DropdownButton<String>(
-              value: selectedWeek,
-              items: FinancialReportGenerator()._weeks
-                  .map((week) => DropdownMenuItem<String>(
-                value: week,
-                child: Text(week),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedWeek = value;
-                    _calculateReports();
-                  });
-                }
-              },
-            ),
-            Text("Weekly Budget: \₱${weeklyData['budget']}"),
-            Text("Weekly Expenses: \₱${weeklyData['expenses']}"),
-            Text("Weekly Saved: \₱${weeklyData['saved']}"),
-            Text("Frequently Bought Items:"),
-            ...weeklyData['frequentItems']
-                .map<Widget>((item) => Text("- ${item['name']} (${item['percentage']}%)"))
-                .toList(),
+            _buildDropdown("Select Week", selectedWeek, FinancialReportGenerator()._weeks, (value) {
+              selectedWeek = value;
+              _calculateReports();
+            }),
+
+            _buildDataCard("Weekly Report", weeklyData),
+            Divider(),
+
+            _buildDropdown("Select Day", selectedDay, _getDaysInMonth(), (value) {
+              selectedDay = value;
+              _calculateReports();
+            }),
+
+            _buildDataCard("Daily Report", dailyData),
           ],
         ),
       ),
