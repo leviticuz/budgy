@@ -29,6 +29,9 @@ class _HomePageState extends State<HomePage> {
   Map<String, int> frequentlyBoughtItems = {};
   late bool _isWeekly;
 
+  // Add the unread notification count variable
+  int unreadNotificationsCount = 5; // Placeholder for the unread notification count
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +39,7 @@ class _HomePageState extends State<HomePage> {
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
     _isWeekly = false;
   }
+
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
     final itemListJson = jsonEncode(
@@ -243,7 +247,6 @@ class _HomePageState extends State<HomePage> {
     ) ?? false;
   }
 
-
   void _validateBudget() async {
     String budgetText = _budgetController.text.trim();
     double? budget = double.tryParse(budgetText);
@@ -313,7 +316,6 @@ class _HomePageState extends State<HomePage> {
     return Future.value(false);
   }
 
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -340,7 +342,6 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-
             if (_selectedIndex == 1)
               TextButton(
                 onPressed: () {
@@ -384,7 +385,7 @@ class _HomePageState extends State<HomePage> {
           elevation: 0,
           currentIndex: _selectedIndex,
           onTap: (index) {
-            if (index == 1) { // Assuming the second item was the "Create" button
+            if (index == 1) { // Assuming the second item is "Notifications"
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => NotificationsScreen()),
@@ -397,7 +398,39 @@ class _HomePageState extends State<HomePage> {
           unselectedItemColor: Colors.teal.shade900,
           items: [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notification'),
+            BottomNavigationBarItem(
+              icon: Stack(
+                children: [
+                  Icon(Icons.notifications), // Notifications icon
+                  if (unreadNotificationsCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadNotificationsCount.toString(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Notifications',
+            ),
             BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
             BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
           ],
