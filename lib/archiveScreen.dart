@@ -31,37 +31,86 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     }
   }
 
-  Future<void> _restoreItem(Item item) async {
+  Future<void> _deleteItem(int index) async {
+    bool confirmDelete = await _showDeleteConfirmationDialog();
+    if (!confirmDelete) return;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Remove item from archive
     setState(() {
-      archivedItems.remove(item);
+      archivedItems.removeAt(index);
     });
 
-    // Update archived list in SharedPreferences
-    List<String> updatedArchive = archivedItems.map((i) => jsonEncode(i.toJson())).toList();
+    List<String> updatedArchive =
+    archivedItems.map((i) => jsonEncode(i.toJson())).toList();
     await prefs.setStringList('archivedItems', updatedArchive);
 
-    // Fetch and safely decode `itemList`
-    String? itemListJson = prefs.getString('itemList');
-    List<Item> itemList = [];
-
-    if (itemListJson != null) {
-      List<dynamic> decodedList = jsonDecode(itemListJson);
-      itemList = decodedList.map((json) => Item.fromJson(json)).toList();
-    }
-
-    // Append restored item
-    itemList.add(item);
-
-    // Save back as a **JSON string** (to maintain correct format)
-    await prefs.setString('itemList', jsonEncode(itemList));
-
-    // Show confirmation
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${item.title} restored")),
+      SnackBar(content: Text("Item deleted")),
     );
+  }
+
+  Future<void> _clearArchive() async {
+    bool confirmClear = await _showClearArchiveDialog();
+    if (!confirmClear) return;
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      archivedItems.clear();
+    });
+
+    await prefs.remove('archivedItems');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Archive cleared")),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmationDialog() async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Delete Item"),
+          content: Text("Are you sure you want to delete this item?"),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text("Delete"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
+  }
+
+  Future<bool> _showClearArchiveDialog() async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Clear Archive"),
+          content: Text("Are you sure you want to delete all archived items?"),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text("Clear"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
   }
 
   @override
@@ -75,6 +124,13 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
+        actions: [
+          if (archivedItems.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.delete_forever, color: Colors.white),
+              onPressed: _clearArchive,
+            ),
+        ],
       ),
       body: archivedItems.isEmpty
           ? _buildEmptyArchive()
@@ -91,6 +147,10 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                 'Budget: ₱${item.budget.toStringAsFixed(2)}\n'
                     'Budget Date: ${DateFormat('yyyy-MM-dd').format(item.date)}\n'
                     'Date Created: ${DateFormat('yyyy-MM-dd').format(item.creationDate)}',
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _deleteItem(index),
               ),
             ),
           );

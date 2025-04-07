@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:Budgy/user_db.dart';
 import 'dummyItems.dart';
 import 'item_helper.dart';
+import 'add_item.dart';
 import 'package:Budgy/EditItemScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -251,6 +252,28 @@ class _SearchbarState extends State<Searchbar> {
             Navigator.pop(context);
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add, color: Colors.teal.shade900), // "+" icon
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute (
+                  builder: (context) => AddItemScreen(
+                    onAddItem: (name, price, quantity) async {
+                      // Handle added item (optional)
+                      await ItemHelper.addItem(widget.listTitle, name, price, quantity);
+                      print("Added Item: $name, $price, $quantity");
+                      updateRemainingBalance(price, quantity);
+                    },
+                    budget: remainingBudget, // Example budget, replace with your actual budget
+                    currentTotalCost: totalSpent, // Replace with actual current total cost
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Container(
         color: Color(0xFFB1E8DE),
