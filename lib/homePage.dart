@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
   late bool _isWeekly;
 
   // Add the unread notification count variable
-  int unreadNotificationsCount = 5; // Placeholder for the unread notification count
+  int unreadNotificationsCount = 0; // Placeholder for the unread notification count
 
   @override
   void initState() {
@@ -38,6 +38,19 @@ class _HomePageState extends State<HomePage> {
     _loadItems();
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
     _isWeekly = false;
+    _loadUnreadNotificationsCount();  // Load the unread notifications count
+  }
+
+  // Method to load unread notifications count
+  Future<void> _loadUnreadNotificationsCount() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? storedNotifications = prefs.getString('notifications');
+    if (storedNotifications != null) {
+      List<Map<String, dynamic>> notifications = List<Map<String, dynamic>>.from(jsonDecode(storedNotifications));
+      setState(() {
+        unreadNotificationsCount = notifications.where((notification) => !notification["read"]).toList().length;
+      });
+    }
   }
 
   Future<void> _saveItems() async {
@@ -389,7 +402,9 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => NotificationsScreen()),
-              );
+              ).then((_) {
+                _loadUnreadNotificationsCount();  // Reload unread notifications count when returning from NotificationsScreen
+              });
             } else {
               _onBottomNavTapped(index);
             }
